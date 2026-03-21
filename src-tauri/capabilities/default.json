@@ -1,0 +1,8 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for SealSounds",
+  "windows": ["main"],
+  "permissions": [
+    "core:default"
+  ]
+}
