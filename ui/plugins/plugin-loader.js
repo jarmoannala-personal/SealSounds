@@ -1,5 +1,7 @@
 // Plugin loader — detects device capabilities and loads appropriate visual plugins
 
+import { registerVisualization } from '../core/viz-manager.js';
+
 export function detectCapabilities() {
   const caps = {
     webgl: false,
@@ -45,7 +47,7 @@ const loadedPlugins = {};
 export async function loadPlugins(caps) {
   console.log(`Device capabilities: tier=${caps.tier}, cores=${caps.cores}, memory=${caps.memory}GB, gpu=${caps.gpu}`);
 
-  // Load ambient smoke (lightweight — works on any WebGL device)
+  // Load ambient smoke (lightweight — works on any WebGL device, search screen only)
   if (caps.webgl) {
     try {
       const ambient = await import('./ambient/index.js');
@@ -63,17 +65,29 @@ export async function loadPlugins(caps) {
     console.log('Skipping ambient plugin: no WebGL');
   }
 
-  // Load Mandelbrot plugin for mid and high tier
-  if (caps.webgl) {
+  // Playback visualizations — loaded in slot order (1, 2, 3, ...)
+  const vizPlugins = [
+    { name: 'Mandelbrot', path: './mandelbrot/index.js' },
+    { name: 'VU Meters',  path: './vu-meters/index.js' },
+    { name: 'Spectrum',   path: './spectrum/index.js' },
+    { name: 'Starfield',    path: './starfield/index.js' },
+    { name: 'Butterflies', path: './butterflies/index.js' },
+    { name: 'Aurora City', path: './aurora/index.js' },
+    { name: 'Rainforest', path: './rainforest/index.js' },
+  ];
+
+  for (const { name, path } of vizPlugins) {
+    if (!caps.webgl) break;
     try {
-      const mandelbrot = await import('./mandelbrot/index.js');
-      const success = mandelbrot.init();
+      const mod = await import(path);
+      const success = mod.init();
       if (success) {
-        loadedPlugins.mandelbrot = mandelbrot;
-        console.log('Mandelbrot plugin loaded');
+        loadedPlugins[name.toLowerCase()] = mod;
+        registerVisualization(name, mod);
+        console.log(`${name} plugin loaded`);
       }
     } catch (e) {
-      console.warn('Failed to load Mandelbrot plugin:', e);
+      console.warn(`Failed to load ${name} plugin:`, e);
     }
   }
 

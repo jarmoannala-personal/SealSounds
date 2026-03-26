@@ -82,10 +82,13 @@ export function init() {
   const container = document.getElementById('pluginCanvas');
   if (!container) return false;
 
-  canvas = document.createElement('canvas');
-  canvas.style.cssText = 'width:100%;height:100%;';
-  container.innerHTML = '';
-  container.appendChild(canvas);
+  canvas = document.getElementById('mandelbrotCanvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'mandelbrotCanvas';
+    canvas.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;';
+    container.appendChild(canvas);
+  }
 
   gl = canvas.getContext('webgl', {
     alpha: true,

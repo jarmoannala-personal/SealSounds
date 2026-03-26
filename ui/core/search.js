@@ -105,6 +105,7 @@ async function searchYouTube(query) {
   // Check cache first
   const cached = getCachedSearch(query);
   if (cached) {
+    console.log(`[API] Search "${query}" — cache hit (0 units)`);
     renderResults(cached);
     return;
   }
@@ -113,6 +114,7 @@ async function searchYouTube(query) {
 
   try {
     // Step 1: Search for videos (100 units)
+    console.log(`[API] Search "${query}" — calling YouTube search.list (100 units)`);
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query + ' full album')}&type=video&videoDuration=long&maxResults=12&key=${CONFIG.YOUTUBE_API_KEY}`;
     const searchResp = await fetch(searchUrl);
     const searchData = await searchResp.json();
@@ -129,6 +131,7 @@ async function searchYouTube(query) {
     }
 
     // Step 2: Check which videos allow embedding (1 unit)
+    console.log(`[API] Checking embeddability for ${searchItems.length} videos — calling videos.list (1 unit)`);
     const videoIds = searchItems.map(i => i.id.videoId).join(',');
     const statusUrl = `https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${videoIds}&key=${CONFIG.YOUTUBE_API_KEY}`;
     const statusResp = await fetch(statusUrl);

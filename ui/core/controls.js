@@ -1,23 +1,6 @@
 import { togglePlayPause, seekToPercent } from './player.js';
 import { nextTrack, previousTrack } from './tracklist.js';
-import { getPlugin } from '../plugins/plugin-loader.js';
-
-let effectsMode = false;
-
-function toggleVisualMode() {
-  effectsMode = !effectsMode;
-  const mandelbrot = getPlugin('mandelbrot');
-
-  if (effectsMode) {
-    document.getElementById('bg1').style.display = 'none';
-    document.getElementById('bg2').style.display = 'none';
-    if (mandelbrot) mandelbrot.show();
-  } else {
-    document.getElementById('bg1').style.display = '';
-    document.getElementById('bg2').style.display = '';
-    if (mandelbrot) mandelbrot.hide();
-  }
-}
+import { activate, deactivate, cycleNext } from './viz-manager.js';
 
 function toggleInfo() {
   const infoOverlay = document.getElementById('infoOverlay');
@@ -38,7 +21,6 @@ export function initControls() {
   // Info link on search screen
   document.getElementById('infoLink').addEventListener('click', toggleInfo);
 
-  // Close info overlay on click (outside panel)
   // Close info overlay — on mobile tap anywhere, on desktop click outside panel
   document.getElementById('infoOverlay').addEventListener('click', (e) => {
     const isMobileView = window.matchMedia('(max-width: 768px)').matches;
@@ -83,18 +65,27 @@ export function initControls() {
       togglePlayPause();
     }
 
+    // Q or ArrowUp to return to album selection
+    if (e.key === 'q' || e.key === 'ArrowUp') {
+      document.getElementById('searchOverlay').classList.remove('hidden');
+      document.getElementById('searchInput').focus();
+      return;
+    }
+
     // Arrow keys for track navigation
     if (e.key === 'ArrowRight') nextTrack();
     if (e.key === 'ArrowLeft') previousTrack();
 
-    // M to toggle Mandelbrot visual
-    if (e.key === 'm') {
-      const mandelbrot = getPlugin('mandelbrot');
-      if (mandelbrot) mandelbrot.toggle();
+    // Number keys 1-9 to select visualization
+    if (e.key >= '1' && e.key <= '9') {
+      activate(parseInt(e.key));
     }
 
-    // S to toggle between slideshow and effects mode
-    if (e.key === 's') toggleVisualMode();
+    // 0 to return to slideshow mode
+    if (e.key === '0') deactivate();
+
+    // S to cycle through visualizations
+    if (e.key === 's') cycleNext();
 
     // F to toggle fullscreen
     if (e.key === 'f') {
@@ -124,10 +115,16 @@ export function initControls() {
   const mobileInfoBtn = document.getElementById('mobileInfoBtn');
 
   if (isMobile && mobileNav) {
-    // Show mobile nav when playing
-    document.addEventListener('sealsounds:firstplay', () => {
-      mobileNav.classList.remove('hidden');
-    }, { once: true });
+    // Show mobile nav when entering listening mode (search overlay hidden)
+    const searchOverlay = document.getElementById('searchOverlay');
+    const navObserver = new MutationObserver(() => {
+      if (searchOverlay.classList.contains('hidden')) {
+        mobileNav.classList.remove('hidden');
+      } else {
+        mobileNav.classList.add('hidden');
+      }
+    });
+    navObserver.observe(searchOverlay, { attributes: true, attributeFilter: ['class'] });
 
     if (mobileBackBtn) {
       mobileBackBtn.addEventListener('click', () => {
@@ -141,6 +138,18 @@ export function initControls() {
         toggleInfo();
       });
     }
+  }
+
+  // Album select button (desktop, upper left)
+  const albumSelectBtn = document.getElementById('albumSelectBtn');
+  if (albumSelectBtn && !isMobile) {
+    document.addEventListener('sealsounds:firstplay', () => {
+      albumSelectBtn.style.display = 'flex';
+    }, { once: true });
+    albumSelectBtn.addEventListener('click', () => {
+      document.getElementById('searchOverlay').classList.remove('hidden');
+      document.getElementById('searchInput').focus();
+    });
   }
 
   // Search hint (desktop)

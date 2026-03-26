@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>SealSounds</title>
-  <link rel="stylesheet" href="styles.css?v=100">
+  <link rel="stylesheet" href="styles.css?v=116">
 </head>
 <body>
 
@@ -35,7 +35,7 @@
     <div class="search-footer">
       <span class="info-link" id="infoLink">About SealSounds &amp; keyboard shortcuts</span>
       <span class="search-footer-hint">Tip: press <kbd>i</kbd> anytime during playback</span>
-      <span class="version-label">v1.0.0</span>
+      <span class="version-label">v1.1.6</span>
     </div>
   </div>
 
@@ -54,11 +54,12 @@
         <h3>Keyboard shortcuts</h3>
         <div class="shortcuts-grid">
           <kbd>Space</kbd><span>Play / Pause</span>
-          <kbd>&larr;</kbd><span>Previous track</span>
-          <kbd>&rarr;</kbd><span>Next track</span>
+          <kbd>&larr; / &rarr;</kbd><span>Previous / Next track</span>
+          <kbd>0</kbd><span>Slideshow mode</span>
+          <kbd>1-7</kbd><span>Select visualization</span>
+          <kbd>S</kbd><span>Cycle visualizations</span>
           <kbd>F</kbd><span>Toggle fullscreen</span>
-          <kbd>S</kbd><span>Toggle slideshow / effects</span>
-          <kbd>M</kbd><span>Toggle Mandelbrot fractal</span>
+          <kbd>Q / ↑</kbd><span>Select album</span>
           <kbd>Escape</kbd><span>Search / Back</span>
           <kbd>I</kbd><span>This info screen</span>
         </div>
@@ -107,6 +108,11 @@
 
   <div class="search-hint" id="searchHint" style="display:none;">Press Escape to search</div>
 
+  <!-- Desktop: back to album selection (upper left) -->
+  <button class="album-select-btn" id="albumSelectBtn" title="Select album (Q)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  </button>
+
 
   <!-- Mobile navigation bar -->
   <div class="mobile-nav hidden" id="mobileNav">
@@ -118,6 +124,7 @@
     </button>
   </div>
 
+  <div id="vizLabel" class="viz-label"></div>
   <div class="error-toast" id="errorToast"></div>
 
   <!-- YouTube Player -->
@@ -128,6 +135,6 @@
   <!-- Plugin mount point (WebGL canvas etc.) -->
   <div id="pluginCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;"></div>
 
-  <script type="module" src="app.js?v=100"></script>
+  <script type="module" src="app.js?v=116"></script>
 </body>
 </html>

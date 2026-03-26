@@ -513,6 +513,47 @@ body {
   margin-top: 20px;
 }
 
+/* Desktop: album select button (upper left) */
+.album-select-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.5);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: none;
+}
+
+.album-select-btn:hover {
+  background: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.9);
+}
+
+/* Visualization label */
+.viz-label {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 15;
+}
+
+.viz-label.visible {
+  opacity: 1;
+}
+
 /* Error toast */
 .error-toast {
   position: fixed;
@@ -692,21 +733,19 @@ body {
   /* Tracklist: vertically centered between YouTube player and bottom bar */
   .tracklist {
     position: fixed;
-    top: 90px;
-    bottom: 120px;
+    top: 50%;
     left: 0;
     right: 0;
     width: 100%;
     height: auto;
     max-height: calc(100vh - 90px - 120px);
-    margin: auto 0;
+    transform: translateY(-50%) translateZ(0); /* Center + GPU layer for iOS */
     background: rgba(0,0,0,0.65);
     padding: 8px 12px;
     opacity: 1;
     z-index: 3;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    transform: translateZ(0); /* Force GPU layer on iOS to fix z-index over iframe */
   }
 
   .tracklist.visible {
@@ -794,7 +833,7 @@ body {
   /* Search overlay adjustments — semi-transparent so ambient smoke shows through */
   .search-overlay {
     padding: 20px 16px;
-    background: rgba(0,0,0,0.75);
+    background: rgba(0,0,0,0.55);
   }
 
   .search-brand {

@@ -77,9 +77,10 @@ export async function fetchTracklist(videoId) {
     return;
   }
 
-  // Check session cache first (0 API units)
+  // Check cache first (0 API units)
   const cached = getCachedTracklist(videoId);
   if (cached && cached.length > 0) {
+    console.log(`[API] Tracklist ${videoId} — cache hit (0 units)`);
     currentTracks = cached;
     renderTracklist();
     return;
@@ -87,6 +88,7 @@ export async function fetchTracklist(videoId) {
 
   try {
     // Fetch video description (1 unit)
+    console.log(`[API] Tracklist ${videoId} — calling videos.list for description (1 unit)`);
     const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${CONFIG.YOUTUBE_API_KEY}`;
     const resp = await fetch(url);
     const data = await resp.json();
@@ -99,6 +101,7 @@ export async function fetchTracklist(videoId) {
 
     // If no timestamps in description, try top comments
     if (tracks.length === 0) {
+      console.log(`[API] No timestamps in description — calling commentThreads.list (1 unit)`);
       tracks = await fetchTimestampsFromComments(videoId);
     }
 

@@ -101,6 +101,10 @@ function onPlayerStateChange(event) {
     startProgressUpdates();
     emit('onPlay');
     document.dispatchEvent(new Event('sealsounds:firstplay'));
+  } else if (event.data === YT.PlayerState.ENDED) {
+    // Loop the album from the beginning
+    player.seekTo(0, true);
+    player.playVideo();
   } else {
     btn.innerHTML = '&#9654;';
     emit('onPause');
