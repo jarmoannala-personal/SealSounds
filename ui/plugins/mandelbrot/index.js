@@ -24,17 +24,38 @@ const FRAGMENT_SHADER = `
     return a + b * cos(6.28318 * (c * t + d));
   }
 
+  // Interesting Mandelbrot locations to cycle through
+  vec2 getCenter(int idx) {
+    if (idx == 0) return vec2(-0.7463, 0.1102);     // Seahorse Valley
+    if (idx == 1) return vec2(-0.16070135, 1.0375665); // Spiral arm
+    if (idx == 2) return vec2(-1.25066, 0.02012);    // Elephant Valley
+    if (idx == 3) return vec2(-0.748, 0.1);          // Double spiral
+    if (idx == 4) return vec2(0.28693, 0.01428);     // Mini Mandelbrot
+    if (idx == 5) return vec2(-0.235125, 0.827215);  // Julia-like cusp
+    return vec2(-0.7463, 0.1102);
+  }
+
   void main() {
     vec2 uv = gl_FragCoord.xy / u_resolution;
 
-    // Aspect ratio correction
     float aspect = u_resolution.x / u_resolution.y;
     vec2 coord = (uv - 0.5) * vec2(aspect, 1.0);
 
-    // Slow exponential zoom into Seahorse Valley
-    // This region has beautiful spirals and detail
-    vec2 center = vec2(-0.7463, 0.1102);
-    float zoom = 1.5 * exp(u_time * 0.05); // slow zoom
+    // Cycle duration per location (seconds), then reset zoom and move to next
+    float cycleDuration = 90.0;
+    float cycleTime = mod(u_time, cycleDuration);
+    int locIndex = int(mod(floor(u_time / cycleDuration), 6.0));
+
+    vec2 center = getCenter(locIndex);
+
+    // Zoom resets each cycle, with smooth fade at transitions
+    float zoom = 1.5 * exp(cycleTime * 0.05);
+
+    // Smooth crossfade near cycle boundary (last 2 seconds)
+    float fadeOut = smoothstep(cycleDuration, cycleDuration - 2.0, cycleTime);
+    float fadeIn = smoothstep(0.0, 2.0, cycleTime);
+    float fade = fadeIn * fadeOut;
+
     coord = center + coord / zoom;
 
     // Mandelbrot iteration
@@ -54,16 +75,15 @@ const FRAGMENT_SHADER = `
     // Color
     vec3 color;
     if (iter >= maxIter - 1.0) {
-      // Inside the set — deep black
       color = vec3(0.0);
     } else {
       float t = smoothIter / maxIter;
-      // Animate the color cycling slowly
       t = fract(t * 4.0 + u_time * 0.01);
       color = palette(t);
     }
 
-    // Apply opacity for blending with background images
+    color *= fade;
+
     gl_FragColor = vec4(color, u_opacity);
   }
 `;

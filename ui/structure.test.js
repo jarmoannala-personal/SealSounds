@@ -78,9 +78,10 @@ describe('mobile parity with desktop keyboard shortcuts', () => {
     expect(indexHtml).toContain('id="mobileNav"');
   });
 
-  it('mobile nav shows on first play', () => {
-    expect(controlsJs).toContain("sealsounds:firstplay");
-    expect(controlsJs).toContain("mobileNav.classList.remove('hidden')");
+  it('mobile nav buttons show/hide with listening mode', () => {
+    expect(controlsJs).toContain("mobileBackBtn");
+    expect(controlsJs).toContain("mobileInfoBtn");
+    expect(controlsJs).toContain("classList.toggle('hidden'");
   });
 
   it('search has a clickable submit button', () => {

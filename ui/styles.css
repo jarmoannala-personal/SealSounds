@@ -212,6 +212,35 @@ body {
   padding: 40px;
 }
 
+/* Back to album button (shown when album is playing) */
+.back-to-album {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.7);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.back-to-album:hover {
+  background: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.95);
+}
+
+.back-to-album.hidden {
+  display: none !important;
+}
+
 .search-overlay.hidden {
   display: none !important;
   visibility: hidden;
@@ -665,28 +694,37 @@ body {
   color: rgba(255,255,255,0.3);
 }
 
-/* Mobile navigation bar — next to YouTube player at top */
+/* Mobile navigation — hidden state marker (no visual) */
 .mobile-nav {
-  position: fixed;
-  top: 0;
-  right: 0;
-  height: 90px;
-  z-index: 5;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  padding: 0 10px;
-  transform: translateZ(0); /* Force GPU layer on iOS to render above iframe */
+  display: none;
 }
 
-.mobile-nav.hidden {
+/* Mobile nav buttons positioned at top corners */
+.mobile-nav-left,
+.mobile-nav-right {
+  position: fixed;
+  top: 0;
+  height: 90px;
+  z-index: 5;
+  transform: translateZ(0);
+}
+
+.mobile-nav-left {
+  left: 10px;
+}
+
+.mobile-nav-right {
+  right: 10px;
+}
+
+.mobile-nav-left.hidden,
+.mobile-nav-right.hidden {
   display: none !important;
 }
 
 .mobile-nav-btn {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: none;
   background: rgba(255,255,255,0.15);
@@ -704,7 +742,9 @@ body {
 
 /* Only show mobile nav on small screens */
 @media (min-width: 769px) {
-  .mobile-nav { display: none !important; }
+  .mobile-nav,
+  .mobile-nav-left,
+  .mobile-nav-right { display: none !important; }
 }
 
 /* =========================================================
@@ -715,10 +755,10 @@ body {
   /* YouTube player: top of screen, bigger for visibility */
   .yt-container {
     top: 0;
-    left: 0;
-    right: 0;
+    left: 58px;
+    right: 58px;
     bottom: auto;
-    width: 100%;
+    width: auto;
     height: 90px;
     border-radius: 0;
     opacity: 1;
@@ -738,7 +778,7 @@ body {
     right: 0;
     width: 100%;
     height: auto;
-    max-height: calc(100vh - 90px - 120px);
+    max-height: calc(100vh - 90px - 155px);
     transform: translateY(-50%) translateZ(0); /* Center + GPU layer for iOS */
     background: rgba(0,0,0,0.65);
     padding: 8px 12px;
@@ -768,7 +808,7 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 120px;
+    height: 155px;
     padding: 8px 12px 10px;
     justify-content: flex-end;
     z-index: 3;
@@ -790,9 +830,9 @@ body {
 
   .fact-text {
     font-size: 12px;
-    line-height: 1.3;
+    line-height: 1.4;
     display: -webkit-box;
-    -webkit-line-clamp: 1;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -819,11 +859,6 @@ body {
   .controls button {
     font-size: 26px;
     padding: 8px;
-  }
-
-  /* Hide background images on mobile — save resources */
-  .bg-image {
-    display: none;
   }
 
   .overlay {

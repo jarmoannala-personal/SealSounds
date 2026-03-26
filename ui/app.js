@@ -45,6 +45,7 @@ async function init() {
     document.getElementById('trackArtist').textContent = artist;
 
     // Reset visualization when loading new content
+    clearInterval(mobileCycleTimer);
     deactivate();
 
     if (isTestMode()) {
@@ -60,9 +61,14 @@ async function init() {
     ]);
     fetchTracklist(videoId);
 
-    // On mobile, auto-activate a visualization since background images are hidden
+    // On mobile: use images if available, otherwise mandelbrot
     if (window.matchMedia('(max-width: 768px)').matches) {
-      activate(1);
+      if (getImageCount() === 0) {
+        activate(1); // No images — start with mandelbrot
+      } else {
+        deactivate(); // Images available — slideshow mode
+        startMobileMandelbrotCycle();
+      }
     }
   });
 
@@ -82,7 +88,25 @@ async function init() {
   on('onPlay', () => setPluginsPlaying(true));
   on('onPause', () => setPluginsPlaying(false));
 
-  console.log('SealSounds v1.1.6 initialized');
+  console.log('SealSounds v1.1.12 initialized');
+}
+
+// Mobile: periodically show mandelbrot between image slideshows
+let mobileCycleTimer = null;
+
+function startMobileMandelbrotCycle() {
+  clearInterval(mobileCycleTimer);
+  let showingMandelbrot = false;
+
+  // Every 3 minutes, toggle between mandelbrot and slideshow
+  mobileCycleTimer = setInterval(() => {
+    if (showingMandelbrot) {
+      deactivate(); // Back to images
+    } else {
+      activate(1);  // Show mandelbrot
+    }
+    showingMandelbrot = !showingMandelbrot;
+  }, 3 * 60 * 1000);
 }
 
 init();

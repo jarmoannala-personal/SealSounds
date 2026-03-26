@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>SealSounds</title>
-  <link rel="stylesheet" href="styles.css?v=116">
+  <link rel="stylesheet" href="styles.css?v=1112">
 </head>
 <body>
 
@@ -21,6 +21,10 @@
 
   <!-- Search overlay -->
   <div class="search-overlay" id="searchOverlay">
+    <button class="back-to-album hidden" id="backToAlbumBtn" title="Back to album">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><polyline points="12 5 19 12 12 19"/></svg>
+      <span>Back to album</span>
+    </button>
     <div class="search-brand">
       <h1>SealSounds</h1>
       <p class="subtitle">Ad-free album listening. No interruptions. Just music.</p>
@@ -35,7 +39,7 @@
     <div class="search-footer">
       <span class="info-link" id="infoLink">About SealSounds &amp; keyboard shortcuts</span>
       <span class="search-footer-hint">Tip: press <kbd>i</kbd> anytime during playback</span>
-      <span class="version-label">v1.1.6</span>
+      <span class="version-label">v1.1.12</span>
     </div>
   </div>
 
@@ -114,15 +118,14 @@
   </button>
 
 
-  <!-- Mobile navigation bar -->
-  <div class="mobile-nav hidden" id="mobileNav">
-    <button class="mobile-nav-btn" id="mobileBackBtn" title="Back to search">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-    </button>
-    <button class="mobile-nav-btn" id="mobileInfoBtn" title="Info">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    </button>
-  </div>
+  <!-- Mobile navigation buttons -->
+  <button class="mobile-nav-btn mobile-nav-left hidden" id="mobileBackBtn" title="Back to search">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+  </button>
+  <button class="mobile-nav-btn mobile-nav-right hidden" id="mobileInfoBtn" title="Info">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r="0.5" fill="currentColor"/></svg>
+  </button>
+  <div class="mobile-nav hidden" id="mobileNav"></div>
 
   <div id="vizLabel" class="viz-label"></div>
   <div class="error-toast" id="errorToast"></div>
@@ -135,6 +138,6 @@
   <!-- Plugin mount point (WebGL canvas etc.) -->
   <div id="pluginCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;"></div>
 
-  <script type="module" src="app.js?v=116"></script>
+  <script type="module" src="app.js?v=1112"></script>
 </body>
 </html>

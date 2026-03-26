@@ -114,15 +114,13 @@ export function initControls() {
   const mobileBackBtn = document.getElementById('mobileBackBtn');
   const mobileInfoBtn = document.getElementById('mobileInfoBtn');
 
-  if (isMobile && mobileNav) {
-    // Show mobile nav when entering listening mode (search overlay hidden)
+  if (isMobile) {
+    // Show/hide mobile nav buttons when entering/leaving listening mode
     const searchOverlay = document.getElementById('searchOverlay');
     const navObserver = new MutationObserver(() => {
-      if (searchOverlay.classList.contains('hidden')) {
-        mobileNav.classList.remove('hidden');
-      } else {
-        mobileNav.classList.add('hidden');
-      }
+      const inListening = searchOverlay.classList.contains('hidden');
+      if (mobileBackBtn) mobileBackBtn.classList.toggle('hidden', !inListening);
+      if (mobileInfoBtn) mobileInfoBtn.classList.toggle('hidden', !inListening);
     });
     navObserver.observe(searchOverlay, { attributes: true, attributeFilter: ['class'] });
 
@@ -149,6 +147,24 @@ export function initControls() {
     albumSelectBtn.addEventListener('click', () => {
       document.getElementById('searchOverlay').classList.remove('hidden');
       document.getElementById('searchInput').focus();
+    });
+  }
+
+  // Back to album button (inside search overlay)
+  const backToAlbumBtn = document.getElementById('backToAlbumBtn');
+  if (backToAlbumBtn) {
+    // Show the button once a video has been loaded
+    // Use searchOverlay observer — if search is hidden, an album is active
+    const searchOverlayForBack = document.getElementById('searchOverlay');
+    const backObserver = new MutationObserver(() => {
+      if (searchOverlayForBack.classList.contains('hidden')) {
+        backToAlbumBtn.classList.remove('hidden');
+      }
+    });
+    backObserver.observe(searchOverlayForBack, { attributes: true, attributeFilter: ['class'] });
+
+    backToAlbumBtn.addEventListener('click', () => {
+      document.getElementById('searchOverlay').classList.add('hidden');
     });
   }
 
