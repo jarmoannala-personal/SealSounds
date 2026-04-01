@@ -18,6 +18,9 @@ jobs:
         with:
           targets: aarch64-apple-darwin
 
+      - name: Create config.js from example
+        run: cp ui/config.example.js ui/config.js
+
       - name: Build Tauri app (Apple Silicon)
         run: |
           cargo install tauri-cli --version "^2"
@@ -37,6 +40,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
+
+      - name: Create config.js from example
+        run: copy ui\config.example.js ui\config.js
 
       - name: Build Tauri app (Windows)
         run: |
