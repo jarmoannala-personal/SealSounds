@@ -251,6 +251,19 @@ body {
   margin-bottom: 40px;
 }
 
+.brand-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.brand-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+}
+
 .search-overlay h1 {
   font-size: 56px;
   font-weight: 200;
@@ -906,6 +919,16 @@ body {
 
   .search-brand {
     margin-bottom: 24px;
+  }
+
+  .brand-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+  }
+
+  .brand-logo {
+    gap: 10px;
   }
 
   .search-overlay h1 {
