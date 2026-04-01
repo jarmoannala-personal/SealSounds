@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { formatTime } from './utils.js';
+import { formatTime, fetchWithTimeout } from './utils.js';
 import { seekTo } from './player.js';
 
 let currentTracks = [];
@@ -90,7 +90,7 @@ export async function fetchTracklist(videoId) {
     // Fetch video description (1 unit)
     console.log(`[API] Tracklist ${videoId} — calling videos.list for description (1 unit)`);
     const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${CONFIG.YOUTUBE_API_KEY}`;
-    const resp = await fetch(url);
+    const resp = await fetchWithTimeout(url);
     const data = await resp.json();
 
     let tracks = [];
@@ -120,7 +120,7 @@ export async function fetchTracklist(videoId) {
 async function fetchTimestampsFromComments(videoId) {
   try {
     const url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=20&order=relevance&key=${CONFIG.YOUTUBE_API_KEY}`;
-    const resp = await fetch(url);
+    const resp = await fetchWithTimeout(url);
     const data = await resp.json();
 
     if (!data.items) return [];
@@ -186,11 +186,20 @@ function renderTracklist() {
     const div = document.createElement('div');
     div.className = 'track-item';
     div.dataset.index = i;
-    div.innerHTML = `
-      <span class="track-num">${i + 1}</span>
-      <span class="track-name">${track.name}</span>
-      <span class="track-time">${formatTime(track.time)}</span>
-    `;
+
+    const num = document.createElement('span');
+    num.className = 'track-num';
+    num.textContent = i + 1;
+    const name = document.createElement('span');
+    name.className = 'track-name';
+    name.textContent = track.name;
+    const time = document.createElement('span');
+    time.className = 'track-time';
+    time.textContent = formatTime(track.time);
+    div.appendChild(num);
+    div.appendChild(name);
+    div.appendChild(time);
+
     div.addEventListener('click', () => seekTo(track.time));
     el.appendChild(div);
   });

@@ -115,28 +115,36 @@ function onPlayerError(event) {
   const code = event.data;
   const toast = document.getElementById('errorToast');
 
+  // Sanitize videoId to alphanumeric/dash/underscore only
+  const safeId = currentVideoId.replace(/[^a-zA-Z0-9_-]/g, '');
+
   if (code === 150 || code === 101) {
-    const ytLink = `https://www.youtube.com/watch?v=${currentVideoId}`;
-    const nextAvailable = lastSearchResults.length > 0;
-    toast.innerHTML = `
-      This video doesn't allow embedding.<br>
-      <a href="${ytLink}" target="_blank">Open on YouTube</a>
-      ${nextAvailable ? '<br><span class="try-next" id="tryNextBtn">Try next result</span>' : ''}
-    `;
-    toast.style.display = 'block';
-    if (nextAvailable) {
-      setTimeout(() => {
-        const btn = document.getElementById('tryNextBtn');
-        if (btn) btn.addEventListener('click', tryNextResult);
-      }, 0);
+    toast.textContent = '';
+    toast.appendChild(document.createTextNode("This video doesn't allow embedding. "));
+    const link = document.createElement('a');
+    link.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(safeId);
+    link.target = '_blank';
+    link.textContent = 'Open on YouTube';
+    toast.appendChild(link);
+
+    if (lastSearchResults.length > 0) {
+      toast.appendChild(document.createElement('br'));
+      const tryBtn = document.createElement('span');
+      tryBtn.className = 'try-next';
+      tryBtn.textContent = 'Try next result';
+      tryBtn.addEventListener('click', tryNextResult);
+      toast.appendChild(tryBtn);
     }
-  } else {
-    toast.innerHTML = `YouTube error (code ${code}). <span class="try-next" id="tryNextBtn">Try next result</span>`;
     toast.style.display = 'block';
-    setTimeout(() => {
-      const btn = document.getElementById('tryNextBtn');
-      if (btn) btn.addEventListener('click', tryNextResult);
-    }, 0);
+  } else {
+    toast.textContent = '';
+    toast.appendChild(document.createTextNode('YouTube error (code ' + parseInt(code) + '). '));
+    const tryBtn = document.createElement('span');
+    tryBtn.className = 'try-next';
+    tryBtn.textContent = 'Try next result';
+    tryBtn.addEventListener('click', tryNextResult);
+    toast.appendChild(tryBtn);
+    toast.style.display = 'block';
   }
   emit('onError', { code });
 }

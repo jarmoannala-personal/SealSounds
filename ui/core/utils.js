@@ -4,6 +4,26 @@ export function formatTime(seconds) {
   return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
+export function fetchWithTimeout(url, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+export function pruneStaleCache(prefix, ttl) {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        const stored = JSON.parse(localStorage.getItem(key));
+        if (stored && stored.ts && Date.now() - stored.ts > ttl) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+  } catch (e) {}
+}
+
 export function guessArtistFromTitle(title) {
   const patterns = [
     /^(.+?)\s*[-–—]\s*.+?full\s*album/i,

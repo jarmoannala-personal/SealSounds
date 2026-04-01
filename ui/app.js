@@ -1,6 +1,6 @@
 // SealSounds — main application entry point
 
-import { guessArtistFromTitle } from './core/utils.js';
+import { guessArtistFromTitle, pruneStaleCache } from './core/utils.js';
 import { initYouTubeAPI, on, isTestMode } from './core/player.js';
 import { initSearch } from './core/search.js';
 import { initControls } from './core/controls.js';
@@ -11,6 +11,11 @@ import { detectCapabilities, loadPlugins, getPlugin } from './plugins/plugin-loa
 import { activate, deactivate } from './core/viz-manager.js';
 
 async function init() {
+  // Prune stale cache entries from localStorage
+  const CACHE_TTL = 24 * 60 * 60 * 1000;
+  pruneStaleCache('ss_search_', CACHE_TTL);
+  pruneStaleCache('ss_tracks_', CACHE_TTL);
+
   // Detect device capabilities and load visual plugins
   const caps = detectCapabilities();
   await loadPlugins(caps);
@@ -88,7 +93,7 @@ async function init() {
   on('onPlay', () => setPluginsPlaying(true));
   on('onPause', () => setPluginsPlaying(false));
 
-  console.log('SealSounds v1.1.12 initialized');
+  console.log('SealSounds v1.1.13 initialized');
 }
 
 // Mobile: periodically show mandelbrot between image slideshows

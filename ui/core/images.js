@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from './utils.js';
+
 let currentImages = [];
 let currentImageIndex = 0;
 let imageTimer = null;
@@ -20,10 +22,17 @@ export function getImageCount() {
   return currentImages.length;
 }
 
+// Keywords that indicate non-music content (medical, scientific, etc.)
+const EXCLUDE_KEYWORDS = /cardiac|cardiology|heart|medical|anatomy|surgery|hospital|disease|patient|clinical|diagnosis|pathology|specimen|artery|ventricle|echocardiogram/i;
+
+// Keywords that indicate music-related content
+const MUSIC_KEYWORDS = /band|music|concert|festival|stage|perform|album|singer|guitar|drum|bass|live|tour|gig|musician|recording/i;
+
 export async function fetchWikimediaImages(artist) {
   try {
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(artist + ' band')}&gsrlimit=15&prop=imageinfo&iiprop=url|mime&iiurlwidth=1920&format=json&origin=*`;
-    const resp = await fetch(url);
+    // Search with "band" qualifier and request page titles for filtering
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(artist + ' band music')}&gsrlimit=20&prop=imageinfo&iiprop=url|mime&iiurlwidth=1920&format=json&origin=*`;
+    const resp = await fetchWithTimeout(url);
     const data = await resp.json();
 
     const images = extractImages(data);
@@ -40,8 +49,9 @@ export async function fetchWikimediaImages(artist) {
 
 async function fetchWikimediaImagesFallback(artist) {
   try {
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(artist)}&gsrlimit=10&prop=imageinfo&iiprop=url|mime&iiurlwidth=1920&format=json&origin=*`;
-    const resp = await fetch(url);
+    // Fallback: still include "musician" to avoid unrelated results
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(artist + ' musician')}&gsrlimit=15&prop=imageinfo&iiprop=url|mime&iiurlwidth=1920&format=json&origin=*`;
+    const resp = await fetchWithTimeout(url);
     const data = await resp.json();
 
     const images = extractImages(data);
@@ -59,9 +69,15 @@ function extractImages(data) {
     for (const page of Object.values(data.query.pages)) {
       if (page.imageinfo && page.imageinfo[0]) {
         const info = page.imageinfo[0];
-        if (info.mime && info.mime.startsWith('image/') && info.mime !== 'image/svg+xml') {
-          images.push(info.thumburl || info.url);
-        }
+        const title = (page.title || '').toLowerCase();
+
+        // Skip non-image formats
+        if (!info.mime || !info.mime.startsWith('image/') || info.mime === 'image/svg+xml') continue;
+
+        // Skip if the file title contains medical/scientific keywords
+        if (EXCLUDE_KEYWORDS.test(title)) continue;
+
+        images.push(info.thumburl || info.url);
       }
     }
   }
@@ -82,25 +98,31 @@ export function showNextImage() {
   const imageUrl = currentImages[nextIndex];
   const effect = transitionEffects[Math.floor(Math.random() * transitionEffects.length)];
 
+  const nextBg = activeBg === 1 ? 2 : 1;
+  const nextEl = document.getElementById('bg' + nextBg);
+  const currentEl = document.getElementById('bg' + activeBg);
+
+  // Preload image before showing
   const img = new Image();
   img.onload = () => {
-    const nextBg = activeBg === 1 ? 2 : 1;
-    const nextEl = document.getElementById('bg' + nextBg);
-    const currEl = document.getElementById('bg' + activeBg);
-
-    nextEl.style.transition = 'none';
+    nextEl.style.backgroundImage = `url(${imageUrl})`;
     nextEl.style.transform = effect.start;
     nextEl.style.filter = effect.filter;
-    nextEl.style.backgroundImage = `url(${imageUrl})`;
 
-    nextEl.offsetHeight; // force reflow
-
-    nextEl.style.transition = 'opacity 2s ease-in-out, transform 20s ease-in-out, filter 2s ease-in-out';
-    nextEl.style.transform = effect.end;
+    // Fade in new, fade out old
     nextEl.classList.add('active');
-    currEl.classList.remove('active');
+    currentEl.classList.remove('active');
+
+    // Slow pan/zoom during display
+    setTimeout(() => {
+      nextEl.style.transform = effect.end;
+    }, 100);
 
     activeBg = nextBg;
+  };
+  img.onerror = () => {
+    // Skip failed images
+    console.warn('Failed to load image:', imageUrl);
   };
   img.src = imageUrl;
 

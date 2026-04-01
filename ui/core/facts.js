@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from './utils.js';
+
 let currentFacts = [];
 let currentFactIndex = 0;
 let factTimer = null;
@@ -17,7 +19,7 @@ export async function fetchWikipediaFacts(artist) {
   try {
     // Use MediaWiki API with origin=* for CORS support
     const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(artist)}&prop=extracts&exintro=true&explaintext=true&format=json&origin=*`;
-    const resp = await fetch(url);
+    const resp = await fetchWithTimeout(url);
     const data = await resp.json();
 
     let facts = [];
@@ -38,7 +40,7 @@ export async function fetchWikipediaFacts(artist) {
     // Also try to get the full article for more facts (using MediaWiki API with CORS)
     try {
       const parseUrl = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(artist)}&prop=text&format=json&origin=*`;
-      const parseResp = await fetch(parseUrl);
+      const parseResp = await fetchWithTimeout(parseUrl);
       const parseData = await parseResp.json();
 
       if (parseData.parse && parseData.parse.text) {

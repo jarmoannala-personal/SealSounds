@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { loadVideo, setLastSearchResults, loadTestVideo } from './player.js';
+import { fetchWithTimeout } from './utils.js';
 
 // In-memory + localStorage cache for search results
 const searchCache = new Map();
@@ -59,6 +60,11 @@ export function initSearch() {
     }
   }
 
+  // Clear stale results when user types a new query
+  searchInput.addEventListener('input', () => {
+    document.getElementById('searchResults').innerHTML = '';
+  });
+
   // Search on Enter key
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -116,7 +122,7 @@ async function searchYouTube(query) {
     // Step 1: Search for videos (100 units)
     console.log(`[API] Search "${query}" — calling YouTube search.list (100 units)`);
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query + ' full album')}&type=video&videoDuration=long&maxResults=12&key=${CONFIG.YOUTUBE_API_KEY}`;
-    const searchResp = await fetch(searchUrl);
+    const searchResp = await fetchWithTimeout(searchUrl);
     const searchData = await searchResp.json();
 
     if (searchData.error) {
@@ -134,7 +140,7 @@ async function searchYouTube(query) {
     console.log(`[API] Checking embeddability for ${searchItems.length} videos — calling videos.list (1 unit)`);
     const videoIds = searchItems.map(i => i.id.videoId).join(',');
     const statusUrl = `https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${videoIds}&key=${CONFIG.YOUTUBE_API_KEY}`;
-    const statusResp = await fetch(statusUrl);
+    const statusResp = await fetchWithTimeout(statusUrl);
     const statusData = await statusResp.json();
 
     const embeddable = new Set();
@@ -166,12 +172,24 @@ function renderResults(items) {
   items.forEach((item, index) => {
     const div = document.createElement('div');
     div.className = 'search-result';
-    div.innerHTML = `
-      <img src="${item.snippet.thumbnails.default.url}" alt="">
-      <div>
-        <div class="result-title">${item.snippet.title}</div>
-        <div class="result-channel">${item.snippet.channelTitle}</div>
-      </div>`;
+
+    const img = document.createElement('img');
+    img.src = item.snippet.thumbnails.default.url;
+    img.alt = '';
+
+    const info = document.createElement('div');
+    const title = document.createElement('div');
+    title.className = 'result-title';
+    title.textContent = item.snippet.title;
+    const channel = document.createElement('div');
+    channel.className = 'result-channel';
+    channel.textContent = item.snippet.channelTitle;
+    info.appendChild(title);
+    info.appendChild(channel);
+
+    div.appendChild(img);
+    div.appendChild(info);
+
     div.addEventListener('click', () => {
       setLastSearchResults(items.slice(index + 1).map(i => ({
         id: i.id.videoId,

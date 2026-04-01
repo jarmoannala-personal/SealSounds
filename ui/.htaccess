@@ -2,6 +2,12 @@
     Header set Cache-Control "no-cache, no-store, must-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "0"
+
+    # Security headers
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.ytimg.com https://*.ggpht.com https://upload.wikimedia.org https://commons.wikimedia.org data:; frame-src https://www.youtube.com; connect-src 'self' https://www.googleapis.com https://en.wikipedia.org https://commons.wikimedia.org; font-src 'self'"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
 <IfModule mod_expires.c>
