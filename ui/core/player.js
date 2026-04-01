@@ -113,12 +113,20 @@ function onPlayerStateChange(event) {
 
 function onPlayerError(event) {
   const code = event.data;
+  console.error(`[Player] YouTube error code=${code}, videoId=${currentVideoId}, origin=${window.location.origin}`);
   const toast = document.getElementById('errorToast');
 
   // Sanitize videoId to alphanumeric/dash/underscore only
   const safeId = currentVideoId.replace(/[^a-zA-Z0-9_-]/g, '');
 
   if (code === 150 || code === 101) {
+    // Auto-try next result if available
+    if (lastSearchResults.length > 0) {
+      console.log('[Player] Embed blocked, auto-trying next result...');
+      tryNextResult();
+      return;
+    }
+    // No more results — show error
     toast.textContent = '';
     toast.appendChild(document.createTextNode("This video doesn't allow embedding. "));
     const link = document.createElement('a');
@@ -126,15 +134,6 @@ function onPlayerError(event) {
     link.target = '_blank';
     link.textContent = 'Open on YouTube';
     toast.appendChild(link);
-
-    if (lastSearchResults.length > 0) {
-      toast.appendChild(document.createElement('br'));
-      const tryBtn = document.createElement('span');
-      tryBtn.className = 'try-next';
-      tryBtn.textContent = 'Try next result';
-      tryBtn.addEventListener('click', tryNextResult);
-      toast.appendChild(tryBtn);
-    }
     toast.style.display = 'block';
   } else {
     toast.textContent = '';

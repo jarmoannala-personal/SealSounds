@@ -17,7 +17,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.ytimg.com https://*.ggpht.com https://upload.wikimedia.org https://commons.wikimedia.org data:; frame-src https://www.youtube.com; connect-src 'self' https://www.googleapis.com https://en.wikipedia.org https://commons.wikimedia.org; font-src 'self'"
+      "csp": null
     }
   },
   "bundle": {

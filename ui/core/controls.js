@@ -43,6 +43,9 @@ export function initControls() {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
+    // Never intercept system shortcuts (Cmd+, Ctrl+, Alt+)
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
     const searchOverlay = document.getElementById('searchOverlay');
     const infoOverlay = document.getElementById('infoOverlay');
 
