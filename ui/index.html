@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>SealSounds</title>
-  <link rel="stylesheet" href="styles.css?v=1113">
+  <link rel="stylesheet" href="styles.css?v=1115">
 </head>
 <body>
 
@@ -39,7 +39,7 @@
     <div class="search-footer">
       <span class="info-link" id="infoLink">About SealSounds &amp; keyboard shortcuts</span>
       <span class="search-footer-hint">Tip: press <kbd>i</kbd> anytime during playback</span>
-      <span class="version-label">v1.1.13</span>
+      <span class="version-label">v1.1.15</span>
     </div>
   </div>
 
@@ -60,12 +60,13 @@
           <kbd>Space</kbd><span>Play / Pause</span>
           <kbd>&larr; / &rarr;</kbd><span>Previous / Next track</span>
           <kbd>0</kbd><span>Slideshow mode</span>
-          <kbd>1-7</kbd><span>Select visualization</span>
+          <kbd>1-9</kbd><span>Select visualization</span>
           <kbd>S</kbd><span>Cycle visualizations</span>
           <kbd>F</kbd><span>Toggle fullscreen</span>
           <kbd>Q / ↑</kbd><span>Select album</span>
           <kbd>Escape</kbd><span>Search / Back</span>
           <kbd>I</kbd><span>This info screen</span>
+          <kbd>H</kbd><span>Version history</span>
         </div>
       </div>
 
@@ -76,6 +77,67 @@
 
       <div class="info-section">
         <p class="info-note info-desktop-only">Click anywhere or press <kbd>I</kbd> to close</p>
+        <p class="info-note info-mobile-only">Tap anywhere to close</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- History overlay -->
+  <div class="info-overlay hidden" id="historyOverlay">
+    <div class="info-panel history-panel">
+      <h2>Version History</h2>
+      <div class="history-list">
+        <div class="history-entry">
+          <span class="history-version">v1.1.14</span>
+          <div class="history-detail">Version history overlay (H key). Volumetric clouds (key 8) and Highland landscape (key 9) visualizations with adaptive resolution targeting 20 FPS. Search enter fix when returning from album. Removed search input clear button.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.13</span>
+          <div class="history-detail">Security hardening: XSS prevention (innerHTML replaced with textContent), Content Security Policy headers for web and Tauri, 10-second fetch timeouts on all API calls, localStorage cache pruning. Wikimedia image filtering to exclude medical/scientific content. Search input clear button removed.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.12</span>
+          <div class="history-detail">Mobile "Did you know" facts expanded to 3 lines. Bottom content area enlarged to 155px.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.11</span>
+          <div class="history-detail">Background images now visible on mobile with slideshow mode. Mandelbrot auto-activates when no images found, cycles every 3 minutes between images and Mandelbrot when images available.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.10</span>
+          <div class="history-detail">"Back to album" button appears on search screen when music is playing, allowing return without re-searching.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.9</span>
+          <div class="history-detail">Mobile nav redesigned: back arrow on left, info (i) button on right, flanking centered YouTube player. Buttons reduced to 44px for better fit.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.8</span>
+          <div class="history-detail">Mandelbrot zoomer cycles through 6 interesting locations (Seahorse Valley, Spiral Arm, Elephant Valley, Double Spiral, Mini Mandelbrot, Julia Cusp) every 90 seconds with crossfade transitions.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.7</span>
+          <div class="history-detail">Mobile nav buttons visible whenever in listening mode (not waiting for autoplay). Smoke effect more visible on mobile search screen. Info shortcuts reordered.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.6</span>
+          <div class="history-detail">Visualization manager with 7 effects selectable via keys 1-7, S to cycle, 0 for slideshow. Added VU Meters, Spectrum Analyzer, Starfield, Butterflies (3D raymarched), Aurora City, and Rainforest. Album select button (Q / Arrow Up). VU meters and spectrum freeze when paused. Console API logging.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.1.0</span>
+          <div class="history-detail">Album loops when reaching end. Search changed to Enter/submit only (saves ~80% API quota). localStorage caching with 24-hour TTL. Hidden test mode ("testalbum"). Swipe left/right for track navigation. Mobile tracklist vertically centered and semi-transparent. Mandelbrot zoom speed increased.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v1.0.0</span>
+          <div class="history-detail">First release. Modular ES6 architecture (player, search, controls, tracklist, images, facts, utils). Plugin system with capability detection. Ambient smoke effect. Mandelbrot zoom. Mobile responsive layout. Test suite (44 tests). Config separated from code.</div>
+        </div>
+        <div class="history-entry">
+          <span class="history-version">v0.10.2</span>
+          <div class="history-detail">Initial commit. YouTube album search and playback, Wikipedia artist facts, Wikimedia Commons images with transitions, tracklist parsing from descriptions and comments, keyboard shortcuts, desktop Tauri wrapper.</div>
+        </div>
+      </div>
+      <div class="info-section">
+        <p class="info-note info-desktop-only">Press <kbd>H</kbd> to close</p>
         <p class="info-note info-mobile-only">Tap anywhere to close</p>
       </div>
     </div>
@@ -138,6 +200,6 @@
   <!-- Plugin mount point (WebGL canvas etc.) -->
   <div id="pluginCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;"></div>
 
-  <script type="module" src="app.js?v=1113"></script>
+  <script type="module" src="app.js?v=1115"></script>
 </body>
 </html>

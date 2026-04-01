@@ -583,6 +583,39 @@ body {
   opacity: 1;
 }
 
+/* History panel */
+.history-panel {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.history-list {
+  margin-top: 16px;
+}
+
+.history-entry {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.history-entry:last-child {
+  border-bottom: none;
+}
+
+.history-version {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  letter-spacing: 1px;
+}
+
+.history-detail {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
 /* Error toast */
 .error-toast {
   position: fixed;

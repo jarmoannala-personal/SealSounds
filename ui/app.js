@@ -93,7 +93,7 @@ async function init() {
   on('onPlay', () => setPluginsPlaying(true));
   on('onPause', () => setPluginsPlaying(false));
 
-  console.log('SealSounds v1.1.13 initialized');
+  console.log('SealSounds v1.1.15 initialized');
 }
 
 // Mobile: periodically show mandelbrot between image slideshows

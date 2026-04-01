@@ -74,6 +74,8 @@ export async function loadPlugins(caps) {
     { name: 'Butterflies', path: './butterflies/index.js' },
     { name: 'Aurora City', path: './aurora/index.js' },
     { name: 'Rainforest', path: './rainforest/index.js' },
+    { name: 'Clouds',     path: './clouds/index.js' },
+    { name: 'Highland',   path: './highland/index.js' },
   ];
 
   for (const { name, path } of vizPlugins) {

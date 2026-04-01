@@ -3,8 +3,13 @@ import { nextTrack, previousTrack } from './tracklist.js';
 import { activate, deactivate, cycleNext } from './viz-manager.js';
 
 function toggleInfo() {
-  const infoOverlay = document.getElementById('infoOverlay');
-  infoOverlay.classList.toggle('hidden');
+  document.getElementById('historyOverlay').classList.add('hidden');
+  document.getElementById('infoOverlay').classList.toggle('hidden');
+}
+
+function toggleHistory() {
+  document.getElementById('infoOverlay').classList.add('hidden');
+  document.getElementById('historyOverlay').classList.toggle('hidden');
 }
 
 export function initControls() {
@@ -21,11 +26,18 @@ export function initControls() {
   // Info link on search screen
   document.getElementById('infoLink').addEventListener('click', toggleInfo);
 
-  // Close info overlay — on mobile tap anywhere, on desktop click outside panel
+  // Close info/history overlays — on mobile tap anywhere, on desktop click outside panel
   document.getElementById('infoOverlay').addEventListener('click', (e) => {
     const isMobileView = window.matchMedia('(max-width: 768px)').matches;
     if (isMobileView || e.target === document.getElementById('infoOverlay')) {
       toggleInfo();
+    }
+  });
+
+  document.getElementById('historyOverlay').addEventListener('click', (e) => {
+    const isMobileView = window.matchMedia('(max-width: 768px)').matches;
+    if (isMobileView || e.target === document.getElementById('historyOverlay')) {
+      toggleHistory();
     }
   });
 
@@ -34,14 +46,18 @@ export function initControls() {
     const searchOverlay = document.getElementById('searchOverlay');
     const infoOverlay = document.getElementById('infoOverlay');
 
-    // I to toggle info (works everywhere)
-    if (e.key === 'i' && document.activeElement.tagName !== 'INPUT') {
-      toggleInfo();
-      return;
+    // I to toggle info, H to toggle history (works everywhere)
+    if (document.activeElement.tagName !== 'INPUT') {
+      if (e.key === 'i') { toggleInfo(); return; }
+      if (e.key === 'h') { toggleHistory(); return; }
     }
 
-    // Escape — close info first, then toggle search
+    // Escape — close overlays first, then toggle search
     if (e.key === 'Escape') {
+      if (!document.getElementById('historyOverlay').classList.contains('hidden')) {
+        toggleHistory();
+        return;
+      }
       if (!infoOverlay.classList.contains('hidden')) {
         toggleInfo();
         return;
@@ -55,9 +71,10 @@ export function initControls() {
       return;
     }
 
-    // Everything below only when search is hidden and not typing
+    // Everything below only when overlays are hidden and not typing
     if (!searchOverlay.classList.contains('hidden')) return;
     if (!infoOverlay.classList.contains('hidden')) return;
+    if (!document.getElementById('historyOverlay').classList.contains('hidden')) return;
 
     // Spacebar to toggle play/pause
     if (e.key === ' ') {
