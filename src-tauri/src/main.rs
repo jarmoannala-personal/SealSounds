@@ -49,8 +49,9 @@ fn start_local_server() -> u16 {
             let path = request.url().split('?').next().unwrap_or("/");
 
             if let Some((content, mime)) = file_map.get(path) {
+                let header_str = format!("Content-Type: {}", mime);
                 let response = tiny_http::Response::from_string(*content)
-                    .with_header(mime.parse::<tiny_http::Header>().unwrap());
+                    .with_header(header_str.parse::<tiny_http::Header>().unwrap());
                 let _ = request.respond(response);
             } else {
                 let response = tiny_http::Response::from_string("Not Found")
