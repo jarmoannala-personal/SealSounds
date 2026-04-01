@@ -12,6 +12,7 @@ const FILES: &[(&str, &str, &str)] = &[
     ("/app.js", include_str!("../../ui/app.js"), "text/javascript; charset=utf-8"),
     ("/config.js", include_str!("../../ui/config.js"), "text/javascript; charset=utf-8"),
     ("/config.example.js", include_str!("../../ui/config.example.js"), "text/javascript; charset=utf-8"),
+    ("/icon.svg", include_str!("../../ui/icon.svg"), "image/svg+xml"),
     // Core modules
     ("/core/utils.js", include_str!("../../ui/core/utils.js"), "text/javascript; charset=utf-8"),
     ("/core/player.js", include_str!("../../ui/core/player.js"), "text/javascript; charset=utf-8"),
