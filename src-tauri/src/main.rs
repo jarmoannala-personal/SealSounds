@@ -12,6 +12,7 @@ const FILES: &[(&str, &str, &str)] = &[
     ("/app.js", include_str!("../../ui/app.js"), "text/javascript; charset=utf-8"),
     ("/config.js", include_str!("../../ui/config.js"), "text/javascript; charset=utf-8"),
     ("/config.example.js", include_str!("../../ui/config.example.js"), "text/javascript; charset=utf-8"),
+    // Core modules
     ("/core/utils.js", include_str!("../../ui/core/utils.js"), "text/javascript; charset=utf-8"),
     ("/core/player.js", include_str!("../../ui/core/player.js"), "text/javascript; charset=utf-8"),
     ("/core/search.js", include_str!("../../ui/core/search.js"), "text/javascript; charset=utf-8"),
@@ -19,9 +20,19 @@ const FILES: &[(&str, &str, &str)] = &[
     ("/core/images.js", include_str!("../../ui/core/images.js"), "text/javascript; charset=utf-8"),
     ("/core/facts.js", include_str!("../../ui/core/facts.js"), "text/javascript; charset=utf-8"),
     ("/core/controls.js", include_str!("../../ui/core/controls.js"), "text/javascript; charset=utf-8"),
+    ("/core/viz-manager.js", include_str!("../../ui/core/viz-manager.js"), "text/javascript; charset=utf-8"),
+    // Plugins
     ("/plugins/plugin-loader.js", include_str!("../../ui/plugins/plugin-loader.js"), "text/javascript; charset=utf-8"),
-    ("/plugins/mandelbrot/index.js", include_str!("../../ui/plugins/mandelbrot/index.js"), "text/javascript; charset=utf-8"),
     ("/plugins/ambient/index.js", include_str!("../../ui/plugins/ambient/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/mandelbrot/index.js", include_str!("../../ui/plugins/mandelbrot/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/vu-meters/index.js", include_str!("../../ui/plugins/vu-meters/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/spectrum/index.js", include_str!("../../ui/plugins/spectrum/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/starfield/index.js", include_str!("../../ui/plugins/starfield/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/butterflies/index.js", include_str!("../../ui/plugins/butterflies/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/aurora/index.js", include_str!("../../ui/plugins/aurora/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/rainforest/index.js", include_str!("../../ui/plugins/rainforest/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/clouds/index.js", include_str!("../../ui/plugins/clouds/index.js"), "text/javascript; charset=utf-8"),
+    ("/plugins/highland/index.js", include_str!("../../ui/plugins/highland/index.js"), "text/javascript; charset=utf-8"),
 ];
 
 fn start_local_server() -> u16 {
