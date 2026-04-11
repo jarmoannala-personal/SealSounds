@@ -175,7 +175,16 @@ export function parseTimestamps(text) {
   }
 
   tracks.sort((a, b) => a.time - b.time);
-  return tracks.length >= 3 ? tracks : [];
+
+  // Deduplicate: keep first entry for each timestamp (handles multi-language descriptions)
+  const seen = new Set();
+  const unique = tracks.filter(t => {
+    if (seen.has(t.time)) return false;
+    seen.add(t.time);
+    return true;
+  });
+
+  return unique.length >= 3 ? unique : [];
 }
 
 function renderTracklist() {

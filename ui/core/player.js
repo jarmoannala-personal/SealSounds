@@ -53,6 +53,13 @@ export function loadVideo(videoId, title, thumbnail) {
   document.getElementById('searchHint').style.display = 'block';
 
   currentVideoId = videoId;
+  // Update URL so the link can be shared
+  try {
+    const url = new URL(window.location);
+    url.searchParams.set('v', videoId);
+    history.replaceState(null, '', url);
+  } catch (e) {}
+
   document.getElementById('trackTitle').textContent = title;
   document.getElementById('trackArtist').textContent = 'Loading info...';
   document.getElementById('albumArt').src = thumbnail;

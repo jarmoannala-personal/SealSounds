@@ -1,7 +1,7 @@
 // SealSounds — main application entry point
 
-import { guessArtistFromTitle, pruneStaleCache } from './core/utils.js';
-import { initYouTubeAPI, on, isTestMode } from './core/player.js';
+import { guessArtistFromTitle, pruneStaleCache, fetchWithTimeout } from './core/utils.js';
+import { initYouTubeAPI, on, isTestMode, loadVideo } from './core/player.js';
 import { initSearch } from './core/search.js';
 import { initControls } from './core/controls.js';
 import { fetchTracklist, updateActiveTrack } from './core/tracklist.js';
@@ -30,6 +30,22 @@ async function init() {
   // Initialize UI modules
   initSearch();
   initControls();
+
+  // Check URL for shared video link (?v=VIDEO_ID)
+  const urlVideoId = new URLSearchParams(window.location.search).get('v');
+  if (urlVideoId && /^[a-zA-Z0-9_-]+$/.test(urlVideoId)) {
+    try {
+      const { CONFIG } = await import('./config.js');
+      const resp = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${urlVideoId}&key=${CONFIG.YOUTUBE_API_KEY}`);
+      const data = await resp.json();
+      if (data.items && data.items[0]) {
+        const snippet = data.items[0].snippet;
+        loadVideo(urlVideoId, snippet.title, snippet.thumbnails.high.url);
+      }
+    } catch (e) {
+      console.warn('Failed to load shared video:', e);
+    }
+  }
 
   // Watch for search overlay visibility to toggle ambient effect
   const searchOverlay = document.getElementById('searchOverlay');
