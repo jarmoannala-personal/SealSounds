@@ -31,22 +31,6 @@ async function init() {
   initSearch();
   initControls();
 
-  // Check URL for shared video link (?v=VIDEO_ID)
-  const urlVideoId = new URLSearchParams(window.location.search).get('v');
-  if (urlVideoId && /^[a-zA-Z0-9_-]+$/.test(urlVideoId)) {
-    try {
-      const { CONFIG } = await import('./config.js');
-      const resp = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${urlVideoId}&key=${CONFIG.YOUTUBE_API_KEY}`);
-      const data = await resp.json();
-      if (data.items && data.items[0]) {
-        const snippet = data.items[0].snippet;
-        loadVideo(urlVideoId, snippet.title, snippet.thumbnails.high.url);
-      }
-    } catch (e) {
-      console.warn('Failed to load shared video:', e);
-    }
-  }
-
   // Watch for search overlay visibility to toggle ambient effect
   const searchOverlay = document.getElementById('searchOverlay');
   const observer = new MutationObserver(() => {
@@ -108,6 +92,22 @@ async function init() {
 
   on('onPlay', () => setPluginsPlaying(true));
   on('onPause', () => setPluginsPlaying(false));
+
+  // Check URL for shared video link (?v=VIDEO_ID) — done last so onLoad listeners are registered
+  const urlVideoId = new URLSearchParams(window.location.search).get('v');
+  if (urlVideoId && /^[a-zA-Z0-9_-]+$/.test(urlVideoId)) {
+    try {
+      const { CONFIG } = await import('./config.js');
+      const resp = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${urlVideoId}&key=${CONFIG.YOUTUBE_API_KEY}`);
+      const data = await resp.json();
+      if (data.items && data.items[0]) {
+        const snippet = data.items[0].snippet;
+        loadVideo(urlVideoId, snippet.title, snippet.thumbnails.high.url);
+      }
+    } catch (e) {
+      console.warn('Failed to load shared video:', e);
+    }
+  }
 
   console.log('SealSounds v1.1.15 initialized');
 }

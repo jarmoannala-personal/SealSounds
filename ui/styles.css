@@ -183,6 +183,29 @@ body {
   transform: scale(1.05);
 }
 
+/* Y key: expand YouTube player to fill viewport */
+.yt-container.yt-expanded {
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  opacity: 1;
+  z-index: 1000;
+}
+
+.yt-container.yt-expanded:hover {
+  transform: none;
+}
+
+.yt-container.yt-expanded #ytPlayer,
+.yt-container.yt-expanded iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* Ambient background canvas */
 #ambientCanvas {
   position: fixed;

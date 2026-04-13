@@ -115,6 +115,11 @@ export function initControls() {
         document.exitFullscreen();
       }
     }
+
+    // Y to expand YouTube player to fill viewport (fullscreen if active, otherwise window)
+    if (e.key === 'y') {
+      document.getElementById('ytContainer').classList.toggle('yt-expanded');
+    }
   });
 
   // Click background to toggle play/pause (desktop only — overlay hidden on mobile)
