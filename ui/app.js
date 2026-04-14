@@ -12,7 +12,7 @@ import { activate, deactivate } from './core/viz-manager.js';
 
 async function init() {
   // Prune stale cache entries from localStorage
-  const CACHE_TTL = 24 * 60 * 60 * 1000;
+  const CACHE_TTL = 3 * 24 * 60 * 60 * 1000; // 3 days
   pruneStaleCache('ss_search_', CACHE_TTL);
   pruneStaleCache('ss_tracks_', CACHE_TTL);
 
@@ -109,7 +109,7 @@ async function init() {
     }
   }
 
-  console.log('SealSounds v1.1.15 initialized');
+  console.log('SealSounds v1.2.0 initialized');
 }
 
 // Mobile: periodically show mandelbrot between image slideshows

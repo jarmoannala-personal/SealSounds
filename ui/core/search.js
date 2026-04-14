@@ -4,7 +4,7 @@ import { fetchWithTimeout } from './utils.js';
 
 // In-memory + localStorage cache for search results
 const searchCache = new Map();
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 function getCachedSearch(query) {
   const key = query.toLowerCase();

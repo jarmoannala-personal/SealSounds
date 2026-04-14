@@ -122,6 +122,18 @@ export function initControls() {
     }
   });
 
+  // When returning from another tab/window, the YouTube iframe keeps focus and
+  // traps keyboard shortcuts. Blur it so document keydown listener works again.
+  window.addEventListener('focus', () => {
+    const active = document.activeElement;
+    if (active && active.tagName === 'IFRAME') active.blur();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    const active = document.activeElement;
+    if (active && active.tagName === 'IFRAME') active.blur();
+  });
+
   // Click background to toggle play/pause (desktop only — overlay hidden on mobile)
   const overlayEl = document.querySelector('.overlay');
   if (overlayEl) {

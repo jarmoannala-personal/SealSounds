@@ -6,7 +6,7 @@ let currentTracks = [];
 let currentTrackIndex = -1;
 
 // localStorage cache for tracklist data (avoids re-fetching for replayed videos)
-const TRACKLIST_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const TRACKLIST_CACHE_TTL = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 function getCachedTracklist(videoId) {
   try {
