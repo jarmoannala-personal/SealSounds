@@ -6,13 +6,14 @@ SealSounds plays full albums from YouTube in a clean environment enriched with a
 
 ## Features
 
-- **Album search** -- finds full album videos on YouTube, filters for embeddable content
+- **Album search** -- finds full album videos on YouTube, auto-skips videos that block embedding
+- **Shareable album URLs** -- `?v=<videoId>` links open the same album with full context
 - **Artist context** -- Wikipedia facts and Wikimedia Commons photos displayed during playback
-- **Tracklist parsing** -- extracts track timestamps from video descriptions and comments
+- **Tracklist parsing** -- extracts track timestamps from video descriptions and comments, deduplicates multi-language entries
 - **9 visualizations** -- Mandelbrot zoom, VU Meters, Spectrum Analyzer, Starfield, Butterflies, Aurora City, Rainforest, Volumetric Clouds, Highland Landscape
 - **Adaptive rendering** -- GPU-heavy shaders auto-adjust resolution to maintain smooth playback
 - **Mobile responsive** -- touch gestures (swipe for tracks), background images with auto-cycling Mandelbrot
-- **Caching** -- search results and tracklist data cached in localStorage (24h TTL) to reduce API usage
+- **Caching** -- search results and tracklist data cached in localStorage (3-day TTL) to reduce API usage
 - **Desktop app** -- Tauri wrapper embeds the UI for native macOS/Windows experience
 
 ## Setup
@@ -52,6 +53,7 @@ npm run test:watch  # watch mode
 | 1-9 | Select visualization |
 | S | Cycle visualizations |
 | F | Toggle fullscreen |
+| Y | Expand YouTube player to fill the viewport |
 | Q / Up | Return to album selection |
 | Escape | Search / Back |
 | I | Info screen |
@@ -103,7 +105,7 @@ SealSounds uses three external APIs (no authentication needed except YouTube):
 - **Wikipedia MediaWiki API** -- artist facts (CORS-enabled, no key needed)
 - **Wikimedia Commons API** -- artist photos (CORS-enabled, no key needed)
 
-Daily YouTube quota is 10,000 units. Caching (24h) and Enter-to-search (instead of per-keystroke) keep usage low.
+Daily YouTube quota is 10,000 units. Caching (3 days) and Enter-to-search (instead of per-keystroke) keep usage low.
 
 ## Security
 
@@ -115,4 +117,4 @@ Daily YouTube quota is 10,000 units. Caching (24h) and Enter-to-search (instead 
 
 ## License
 
-Private project. Not open source.
+MIT — see [LICENSE](LICENSE).
