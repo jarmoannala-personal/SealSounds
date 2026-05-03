@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
-import { loadVideo, setLastSearchResults, loadTestVideo } from './player.js';
-import { fetchWithTimeout } from './utils.js';
+import { loadVideo, loadPlaylist, setLastSearchResults, loadTestVideo } from './player.js';
+import { fetchWithTimeout, decodeEntities, parseYouTubeUrl } from './utils.js';
 
 // In-memory + localStorage cache for search results
 const searchCache = new Map();
@@ -55,8 +55,49 @@ export function initSearch() {
       loadTestVideo('Test Artist — Greatest Hits (Full Album)');
       return;
     }
+    // If the user pasted a YouTube URL or bare ID, load it directly.
+    const parsed = parseYouTubeUrl(query);
+    if (parsed) {
+      loadByParsedRef(parsed);
+      return;
+    }
     if (query.length > 2) {
       searchYouTube(query);
+    }
+  }
+
+  async function loadByParsedRef(ref) {
+    const resultsContainer = document.getElementById('searchResults');
+    if (!CONFIG.YOUTUBE_API_KEY) {
+      resultsContainer.innerHTML = '<div class="loading">No API key configured.</div>';
+      return;
+    }
+    resultsContainer.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+      if (ref.kind === 'playlist') {
+        const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${ref.id}&key=${CONFIG.YOUTUBE_API_KEY}`;
+        const resp = await fetchWithTimeout(url);
+        const data = await resp.json();
+        if (!data.items || !data.items[0]) {
+          resultsContainer.innerHTML = '<div class="loading">Playlist not found.</div>';
+          return;
+        }
+        const sn = data.items[0].snippet;
+        const thumb = sn.thumbnails && (sn.thumbnails.high || sn.thumbnails.default);
+        loadPlaylist(ref.id, decodeEntities(sn.title), thumb ? thumb.url : '');
+      } else {
+        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${ref.id}&key=${CONFIG.YOUTUBE_API_KEY}`;
+        const resp = await fetchWithTimeout(url);
+        const data = await resp.json();
+        if (!data.items || !data.items[0]) {
+          resultsContainer.innerHTML = '<div class="loading">Video not found.</div>';
+          return;
+        }
+        const sn = data.items[0].snippet;
+        loadVideo(ref.id, decodeEntities(sn.title), sn.thumbnails.high.url);
+      }
+    } catch (err) {
+      resultsContainer.innerHTML = `<div class="loading">Failed to load: ${err.message}</div>`;
     }
   }
 
@@ -74,6 +115,13 @@ export function initSearch() {
       // Hidden test mode — bypass API entirely
       if (query.toLowerCase() === 'testalbum') {
         loadTestVideo('Test Artist — Greatest Hits (Full Album)');
+        return;
+      }
+
+      // Pasted YouTube URL — load directly without searching
+      const parsed = parseYouTubeUrl(query);
+      if (parsed) {
+        loadByParsedRef(parsed);
         return;
       }
 
@@ -119,45 +167,51 @@ async function searchYouTube(query) {
   resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
 
   try {
-    // Step 1: Search for videos (100 units)
-    console.log(`[API] Search "${query}" — calling YouTube search.list (100 units)`);
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query + ' full album')}&type=video&videoDuration=long&maxResults=12&key=${CONFIG.YOUTUBE_API_KEY}`;
-    const searchResp = await fetchWithTimeout(searchUrl);
-    const searchData = await searchResp.json();
+    const q = encodeURIComponent(query + ' full album');
+    const key = CONFIG.YOUTUBE_API_KEY;
+    const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&videoDuration=long&maxResults=10&key=${key}`;
+    const playlistSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=playlist&maxResults=6&key=${key}`;
 
-    if (searchData.error) {
-      resultsContainer.innerHTML = `<div class="loading">API error: ${searchData.error.message}</div>`;
+    console.log(`[API] Search "${query}" — videos.list + playlists.list (200 units)`);
+    const [videoResp, playlistResp] = await Promise.all([
+      fetchWithTimeout(videoSearchUrl),
+      fetchWithTimeout(playlistSearchUrl),
+    ]);
+    const [videoData, playlistData] = await Promise.all([videoResp.json(), playlistResp.json()]);
+
+    if (videoData.error && playlistData.error) {
+      resultsContainer.innerHTML = `<div class="loading">API error: ${videoData.error.message}</div>`;
       return;
     }
 
-    const searchItems = searchData.items || [];
-    if (searchItems.length === 0) {
+    const videoSearchItems = (videoData.items || []).filter(i => i.id && i.id.videoId);
+    const playlistSearchItems = (playlistData.items || []).filter(i => i.id && i.id.playlistId);
+
+    // Embeddability check for video results (1 unit)
+    let embeddableVideos = [];
+    if (videoSearchItems.length > 0) {
+      console.log(`[API] Checking embeddability for ${videoSearchItems.length} videos — videos.list (1 unit)`);
+      const videoIds = videoSearchItems.map(i => i.id.videoId).join(',');
+      const statusUrl = `https://www.googleapis.com/youtube/v3/videos?part=status&id=${videoIds}&key=${key}`;
+      const statusResp = await fetchWithTimeout(statusUrl);
+      const statusData = await statusResp.json();
+      const embeddable = new Set();
+      for (const video of (statusData.items || [])) {
+        if (video.status && video.status.embeddable) embeddable.add(video.id);
+      }
+      embeddableVideos = videoSearchItems.filter(i => embeddable.has(i.id.videoId));
+    }
+
+    const items = [
+      ...embeddableVideos.map(i => ({ kind: 'video', id: i.id.videoId, snippet: i.snippet })),
+      ...playlistSearchItems.map(i => ({ kind: 'playlist', id: i.id.playlistId, snippet: i.snippet })),
+    ];
+
+    if (items.length === 0) {
       resultsContainer.innerHTML = '<div class="loading">No results found.</div>';
       return;
     }
 
-    // Step 2: Check which videos allow embedding (1 unit)
-    console.log(`[API] Checking embeddability for ${searchItems.length} videos — calling videos.list (1 unit)`);
-    const videoIds = searchItems.map(i => i.id.videoId).join(',');
-    const statusUrl = `https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${videoIds}&key=${CONFIG.YOUTUBE_API_KEY}`;
-    const statusResp = await fetchWithTimeout(statusUrl);
-    const statusData = await statusResp.json();
-
-    const embeddable = new Set();
-    for (const video of (statusData.items || [])) {
-      if (video.status && video.status.embeddable) {
-        embeddable.add(video.id);
-      }
-    }
-
-    const items = searchItems.filter(i => embeddable.has(i.id.videoId));
-
-    if (items.length === 0) {
-      resultsContainer.innerHTML = '<div class="loading">No embeddable results found. Try a different search.</div>';
-      return;
-    }
-
-    // Cache the results
     setCachedSearch(query, items);
     renderResults(items);
   } catch (err) {
@@ -165,7 +219,26 @@ async function searchYouTube(query) {
   }
 }
 
-function renderResults(items) {
+// Adapt cached items written before the unified shape was introduced.
+// Raw YouTube search-result items also carry a `kind` field (set to
+// "youtube#searchResult") on the outer object, so check for our specific
+// normalized values rather than truthiness.
+function normalizeItem(item) {
+  if (!item) return null;
+  if (item.kind === 'video' || item.kind === 'playlist') return item;
+  if (item.id && typeof item.id === 'object') {
+    if (item.id.videoId) {
+      return { kind: 'video', id: item.id.videoId, snippet: item.snippet };
+    }
+    if (item.id.playlistId) {
+      return { kind: 'playlist', id: item.id.playlistId, snippet: item.snippet };
+    }
+  }
+  return null;
+}
+
+function renderResults(rawItems) {
+  const items = (rawItems || []).map(normalizeItem).filter(Boolean);
   const resultsContainer = document.getElementById('searchResults');
   resultsContainer.innerHTML = '';
 
@@ -174,16 +247,23 @@ function renderResults(items) {
     div.className = 'search-result';
 
     const img = document.createElement('img');
-    img.src = item.snippet.thumbnails.default.url;
+    const thumbs = item.snippet.thumbnails || {};
+    img.src = (thumbs.default && thumbs.default.url) || (thumbs.medium && thumbs.medium.url) || '';
     img.alt = '';
 
     const info = document.createElement('div');
     const title = document.createElement('div');
     title.className = 'result-title';
-    title.textContent = item.snippet.title;
+    title.textContent = decodeEntities(item.snippet.title);
+    if (item.kind === 'playlist') {
+      const badge = document.createElement('span');
+      badge.className = 'result-badge';
+      badge.textContent = 'Playlist';
+      title.appendChild(badge);
+    }
     const channel = document.createElement('div');
     channel.className = 'result-channel';
-    channel.textContent = item.snippet.channelTitle;
+    channel.textContent = decodeEntities(item.snippet.channelTitle || '');
     info.appendChild(title);
     info.appendChild(channel);
 
@@ -191,17 +271,26 @@ function renderResults(items) {
     div.appendChild(info);
 
     div.addEventListener('click', () => {
-      setLastSearchResults(items.slice(index + 1).map(i => ({
-        id: i.id.videoId,
-        title: i.snippet.title,
-        thumbnail: i.snippet.thumbnails.high.url,
-      })));
+      // Build a fallback list of *video* results that follow this one — used to
+      // auto-skip an embed-blocked video. Playlists are excluded.
+      const fallback = items
+        .slice(index + 1)
+        .filter(i => i.kind === 'video')
+        .map(i => ({
+          id: i.id,
+          title: decodeEntities(i.snippet.title),
+          thumbnail: (i.snippet.thumbnails && i.snippet.thumbnails.high && i.snippet.thumbnails.high.url) || '',
+        }));
+      setLastSearchResults(fallback);
       document.getElementById('errorToast').style.display = 'none';
-      loadVideo(
-        item.id.videoId,
-        item.snippet.title,
-        item.snippet.thumbnails.high.url
-      );
+
+      const titleText = decodeEntities(item.snippet.title);
+      const thumbHi = item.snippet.thumbnails && item.snippet.thumbnails.high && item.snippet.thumbnails.high.url;
+      if (item.kind === 'playlist') {
+        loadPlaylist(item.id, titleText, thumbHi || '');
+      } else {
+        loadVideo(item.id, titleText, thumbHi || '');
+      }
     });
     resultsContainer.appendChild(div);
   });

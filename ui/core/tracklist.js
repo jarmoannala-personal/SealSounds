@@ -1,9 +1,10 @@
 import { CONFIG } from '../config.js';
-import { formatTime, fetchWithTimeout } from './utils.js';
-import { seekTo } from './player.js';
+import { formatTime, fetchWithTimeout, decodeEntities } from './utils.js';
+import { seekTo, getPlayer } from './player.js';
 
 let currentTracks = [];
 let currentTrackIndex = -1;
+let currentMode = 'timestamps'; // 'timestamps' | 'playlist'
 
 // localStorage cache for tracklist data (avoids re-fetching for replayed videos)
 const TRACKLIST_CACHE_TTL = 3 * 24 * 60 * 60 * 1000; // 3 days
@@ -13,7 +14,9 @@ function getCachedTracklist(videoId) {
     const stored = localStorage.getItem('ss_tracks_' + videoId);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Date.now() - parsed.ts < TRACKLIST_CACHE_TTL) return parsed.data;
+      if (Date.now() - parsed.ts < TRACKLIST_CACHE_TTL) {
+        return parsed.data.map(t => ({ ...t, name: decodeEntities(t.name) }));
+      }
       localStorage.removeItem('ss_tracks_' + videoId);
     }
   } catch (e) {}
@@ -26,6 +29,26 @@ function setCachedTracklist(videoId, tracks) {
   } catch (e) {}
 }
 
+function getCachedPlaylistTracks(playlistId) {
+  try {
+    const stored = localStorage.getItem('ss_pltracks_' + playlistId);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Date.now() - parsed.ts < TRACKLIST_CACHE_TTL) {
+        return parsed.data.map(t => ({ ...t, name: decodeEntities(t.name) }));
+      }
+      localStorage.removeItem('ss_pltracks_' + playlistId);
+    }
+  } catch (e) {}
+  return null;
+}
+
+function setCachedPlaylistTracks(playlistId, tracks) {
+  try {
+    localStorage.setItem('ss_pltracks_' + playlistId, JSON.stringify({ data: tracks, ts: Date.now() }));
+  } catch (e) {}
+}
+
 export function getTracks() {
   return currentTracks;
 }
@@ -34,20 +57,25 @@ export function getCurrentTrackIndex() {
   return currentTrackIndex;
 }
 
+function gotoTrack(track) {
+  if (currentMode === 'playlist') {
+    const player = getPlayer();
+    if (player && player.playVideoAt) player.playVideoAt(track.position);
+  } else {
+    seekTo(track.time);
+  }
+}
+
 export function nextTrack() {
   if (currentTracks.length === 0) return;
   const next = currentTrackIndex + 1;
-  if (next < currentTracks.length) {
-    seekTo(currentTracks[next].time);
-  }
+  if (next < currentTracks.length) gotoTrack(currentTracks[next]);
 }
 
 export function previousTrack() {
   if (currentTracks.length === 0) return;
   const prev = currentTrackIndex - 1;
-  if (prev >= 0) {
-    seekTo(currentTracks[prev].time);
-  }
+  if (prev >= 0) gotoTrack(currentTracks[prev]);
 }
 
 function generateTestTracklist() {
@@ -67,6 +95,7 @@ function generateTestTracklist() {
 export async function fetchTracklist(videoId) {
   currentTracks = [];
   currentTrackIndex = -1;
+  currentMode = 'timestamps';
   const tracklistEl = document.getElementById('tracklist');
   tracklistEl.innerHTML = '';
 
@@ -117,6 +146,54 @@ export async function fetchTracklist(videoId) {
   }
 }
 
+export async function fetchPlaylistTracks(playlistId) {
+  currentTracks = [];
+  currentTrackIndex = -1;
+  currentMode = 'playlist';
+  const tracklistEl = document.getElementById('tracklist');
+  tracklistEl.innerHTML = '';
+
+  const cached = getCachedPlaylistTracks(playlistId);
+  if (cached && cached.length > 0) {
+    console.log(`[API] Playlist ${playlistId} — cache hit (0 units)`);
+    currentTracks = cached;
+    renderTracklist();
+    return;
+  }
+
+  try {
+    const tracks = [];
+    let pageToken = '';
+    let pages = 0;
+    do {
+      console.log(`[API] Playlist ${playlistId} — calling playlistItems.list (1 unit)`);
+      const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50${pageToken ? '&pageToken=' + pageToken : ''}&key=${CONFIG.YOUTUBE_API_KEY}`;
+      const resp = await fetchWithTimeout(url);
+      const data = await resp.json();
+      if (data.error || !data.items) break;
+      for (const item of data.items) {
+        const sn = item.snippet;
+        if (!sn) continue;
+        tracks.push({
+          name: decodeEntities(sn.title || ''),
+          videoId: sn.resourceId && sn.resourceId.videoId,
+          position: sn.position,
+        });
+      }
+      pageToken = data.nextPageToken || '';
+      pages++;
+    } while (pageToken && pages < 5); // cap at 250 tracks
+
+    if (tracks.length === 0) return;
+
+    setCachedPlaylistTracks(playlistId, tracks);
+    currentTracks = tracks;
+    renderTracklist();
+  } catch (err) {
+    console.error('Failed to fetch playlist tracks:', err);
+  }
+}
+
 async function fetchTimestampsFromComments(videoId) {
   try {
     const url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=20&order=relevance&key=${CONFIG.YOUTUBE_API_KEY}`;
@@ -127,9 +204,11 @@ async function fetchTimestampsFromComments(videoId) {
 
     let bestTracks = [];
     for (const thread of data.items) {
-      const text = thread.snippet.topLevelComment.snippet.textDisplay
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<[^>]+>/g, '');
+      const text = decodeEntities(
+        thread.snippet.topLevelComment.snippet.textDisplay
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+      );
       const tracks = parseTimestamps(text);
       if (tracks.length > bestTracks.length) {
         bestTracks = tracks;
@@ -190,6 +269,7 @@ export function parseTimestamps(text) {
 function renderTracklist() {
   const el = document.getElementById('tracklist');
   el.innerHTML = `<div class="tracklist-title">Tracklist</div>`;
+  el.classList.toggle('playlist-mode', currentMode === 'playlist');
 
   currentTracks.forEach((track, i) => {
     const div = document.createElement('div');
@@ -202,35 +282,28 @@ function renderTracklist() {
     const name = document.createElement('span');
     name.className = 'track-name';
     name.textContent = track.name;
-    const time = document.createElement('span');
-    time.className = 'track-time';
-    time.textContent = formatTime(track.time);
     div.appendChild(num);
     div.appendChild(name);
-    div.appendChild(time);
 
-    div.addEventListener('click', () => seekTo(track.time));
+    if (currentMode !== 'playlist') {
+      const time = document.createElement('span');
+      time.className = 'track-time';
+      time.textContent = formatTime(track.time);
+      div.appendChild(time);
+    }
+
+    div.addEventListener('click', () => gotoTrack(track));
     el.appendChild(div);
   });
 
   el.classList.add('visible');
 }
 
-export function updateActiveTrack(currentSeconds) {
-  if (currentTracks.length === 0) return;
-
-  let idx = -1;
-  for (let i = currentTracks.length - 1; i >= 0; i--) {
-    if (currentSeconds >= currentTracks[i].time) {
-      idx = i;
-      break;
-    }
-  }
-
+function setActiveIndex(idx) {
   if (idx === currentTrackIndex) return;
   currentTrackIndex = idx;
 
-  if (idx >= 0) {
+  if (idx >= 0 && currentTracks[idx]) {
     document.getElementById('trackTitle').textContent = currentTracks[idx].name;
   }
 
@@ -242,4 +315,28 @@ export function updateActiveTrack(currentSeconds) {
   if (idx >= 0 && items[idx]) {
     items[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
+}
+
+export function updateActiveTrack(currentSeconds) {
+  if (currentMode !== 'timestamps' || currentTracks.length === 0) return;
+
+  let idx = -1;
+  for (let i = currentTracks.length - 1; i >= 0; i--) {
+    if (currentSeconds >= currentTracks[i].time) {
+      idx = i;
+      break;
+    }
+  }
+  setActiveIndex(idx);
+}
+
+export function updateActivePlaylistVideo(playlistIndex) {
+  if (currentMode !== 'playlist' || currentTracks.length === 0) return;
+  // Find the track whose `position` matches the player's current playlist index.
+  // Fall back to the index itself if positions are sequential 0..N-1.
+  let idx = currentTracks.findIndex(t => t.position === playlistIndex);
+  if (idx < 0 && playlistIndex >= 0 && playlistIndex < currentTracks.length) {
+    idx = playlistIndex;
+  }
+  setActiveIndex(idx);
 }

@@ -1,10 +1,10 @@
 // SealSounds — main application entry point
 
-import { guessArtistFromTitle, pruneStaleCache, fetchWithTimeout } from './core/utils.js';
-import { initYouTubeAPI, on, isTestMode, loadVideo } from './core/player.js';
+import { guessArtistFromTitle, pruneStaleCache, fetchWithTimeout, decodeEntities } from './core/utils.js';
+import { initYouTubeAPI, on, isTestMode, loadVideo, loadPlaylist } from './core/player.js';
 import { initSearch } from './core/search.js';
 import { initControls } from './core/controls.js';
-import { fetchTracklist, updateActiveTrack } from './core/tracklist.js';
+import { fetchTracklist, fetchPlaylistTracks, updateActiveTrack, updateActivePlaylistVideo } from './core/tracklist.js';
 import { fetchWikimediaImages, getImageCount } from './core/images.js';
 import { fetchWikipediaFacts } from './core/facts.js';
 import { detectCapabilities, loadPlugins, getPlugin } from './plugins/plugin-loader.js';
@@ -15,6 +15,7 @@ async function init() {
   const CACHE_TTL = 3 * 24 * 60 * 60 * 1000; // 3 days
   pruneStaleCache('ss_search_', CACHE_TTL);
   pruneStaleCache('ss_tracks_', CACHE_TTL);
+  pruneStaleCache('ss_pltracks_', CACHE_TTL);
 
   // Detect device capabilities and load visual plugins
   const caps = detectCapabilities();
@@ -44,8 +45,8 @@ async function init() {
   });
   observer.observe(searchOverlay, { attributes: true, attributeFilter: ['class'] });
 
-  // When a video loads, fetch artist metadata and tracklist
-  on('onLoad', async ({ videoId, title }) => {
+  // When a video or playlist loads, fetch artist metadata and tracklist
+  on('onLoad', async ({ videoId, playlistId, title, kind }) => {
     const artist = guessArtistFromTitle(title);
     document.getElementById('trackArtist').textContent = artist;
 
@@ -64,7 +65,11 @@ async function init() {
       fetchWikipediaFacts(artist),
       fetchWikimediaImages(artist),
     ]);
-    fetchTracklist(videoId);
+    if (kind === 'playlist' && playlistId) {
+      fetchPlaylistTracks(playlistId);
+    } else if (videoId) {
+      fetchTracklist(videoId);
+    }
 
     // On mobile: use images if available, otherwise mandelbrot
     if (window.matchMedia('(max-width: 768px)').matches) {
@@ -82,6 +87,11 @@ async function init() {
     updateActiveTrack(current);
   });
 
+  // In playlist mode, update the active track when the player advances videos
+  on('onPlaylistVideoChange', ({ index }) => {
+    updateActivePlaylistVideo(index);
+  });
+
   // Notify audio-reactive plugins of play/pause state
   function setPluginsPlaying(state) {
     const vu = getPlugin('vu meters');
@@ -93,23 +103,40 @@ async function init() {
   on('onPlay', () => setPluginsPlaying(true));
   on('onPause', () => setPluginsPlaying(false));
 
-  // Check URL for shared video link (?v=VIDEO_ID) — done last so onLoad listeners are registered
-  const urlVideoId = new URLSearchParams(window.location.search).get('v');
-  if (urlVideoId && /^[a-zA-Z0-9_-]+$/.test(urlVideoId)) {
+  // Check URL for shared link — done last so onLoad listeners are registered.
+  // Supports ?list=PLAYLIST_ID (preferred if both are present) and ?v=VIDEO_ID.
+  const params = new URLSearchParams(window.location.search);
+  const urlPlaylistId = params.get('list');
+  const urlVideoId = params.get('v');
+  const idLike = /^[a-zA-Z0-9_-]+$/;
+  if (urlPlaylistId && idLike.test(urlPlaylistId)) {
+    try {
+      const { CONFIG } = await import('./config.js');
+      const resp = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${urlPlaylistId}&key=${CONFIG.YOUTUBE_API_KEY}`);
+      const data = await resp.json();
+      if (data.items && data.items[0]) {
+        const snippet = data.items[0].snippet;
+        const thumb = snippet.thumbnails && (snippet.thumbnails.high || snippet.thumbnails.default);
+        loadPlaylist(urlPlaylistId, decodeEntities(snippet.title), thumb ? thumb.url : '');
+      }
+    } catch (e) {
+      console.warn('Failed to load shared playlist:', e);
+    }
+  } else if (urlVideoId && idLike.test(urlVideoId)) {
     try {
       const { CONFIG } = await import('./config.js');
       const resp = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${urlVideoId}&key=${CONFIG.YOUTUBE_API_KEY}`);
       const data = await resp.json();
       if (data.items && data.items[0]) {
         const snippet = data.items[0].snippet;
-        loadVideo(urlVideoId, snippet.title, snippet.thumbnails.high.url);
+        loadVideo(urlVideoId, decodeEntities(snippet.title), snippet.thumbnails.high.url);
       }
     } catch (e) {
       console.warn('Failed to load shared video:', e);
     }
   }
 
-  console.log('SealSounds v1.2.0 initialized');
+  console.log('SealSounds v1.3.0 initialized');
 }
 
 // Mobile: periodically show mandelbrot between image slideshows

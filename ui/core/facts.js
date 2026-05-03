@@ -1,15 +1,8 @@
-import { fetchWithTimeout } from './utils.js';
+import { fetchWithTimeout, decodeEntities } from './utils.js';
 
 let currentFacts = [];
 let currentFactIndex = 0;
 let factTimer = null;
-
-// Decode HTML entities like &#91; &amp; etc.
-const _decoder = document.createElement('textarea');
-function decodeEntities(str) {
-  _decoder.innerHTML = str;
-  return _decoder.value;
-}
 
 export function getFactCount() {
   return currentFacts.length;

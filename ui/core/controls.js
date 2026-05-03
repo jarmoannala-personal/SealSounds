@@ -119,6 +119,7 @@ export function initControls() {
     // Y to expand YouTube player to fill viewport (fullscreen if active, otherwise window)
     if (e.key === 'y') {
       document.getElementById('ytContainer').classList.toggle('yt-expanded');
+      document.body.classList.toggle('yt-expanded');
     }
   });
 

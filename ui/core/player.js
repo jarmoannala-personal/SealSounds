@@ -2,6 +2,9 @@ import { formatTime } from './utils.js';
 
 let player = null;
 let currentVideoId = null;
+let currentPlaylistId = null;
+let currentPlaylistIndex = -1;
+let pendingPlaylistId = null;
 let lastSearchResults = [];
 let progressTimer = null;
 
@@ -11,6 +14,7 @@ const listeners = {
   onPlay: [],
   onPause: [],
   onProgress: [],
+  onPlaylistVideoChange: [],
   onError: [],
 };
 
@@ -30,6 +34,10 @@ export function getCurrentVideoId() {
   return currentVideoId;
 }
 
+export function getCurrentPlaylistId() {
+  return currentPlaylistId;
+}
+
 export function setLastSearchResults(results) {
   lastSearchResults = results;
 }
@@ -47,24 +55,7 @@ export function initYouTubeAPI() {
   });
 }
 
-export function loadVideo(videoId, title, thumbnail) {
-  document.getElementById('searchOverlay').classList.add('hidden');
-  document.getElementById('ytContainer').style.display = 'block';
-  document.getElementById('searchHint').style.display = 'block';
-
-  currentVideoId = videoId;
-  // Update URL so the link can be shared
-  try {
-    const url = new URL(window.location);
-    url.searchParams.set('v', videoId);
-    history.replaceState(null, '', url);
-  } catch (e) {}
-
-  document.getElementById('trackTitle').textContent = title;
-  document.getElementById('trackArtist').textContent = 'Loading info...';
-  document.getElementById('albumArt').src = thumbnail;
-
-  // Destroy old player and re-create the DOM element
+function resetPlayerDom() {
   if (player) {
     try { player.destroy(); } catch (e) {}
     player = null;
@@ -75,6 +66,51 @@ export function loadVideo(videoId, title, thumbnail) {
   const newEl = document.createElement('div');
   newEl.id = 'ytPlayer';
   container.appendChild(newEl);
+}
+
+function showPlayerChrome() {
+  document.getElementById('searchOverlay').classList.add('hidden');
+  document.getElementById('ytContainer').style.display = 'block';
+  document.getElementById('searchHint').style.display = 'block';
+}
+
+export function loadVideo(videoId, title, thumbnail) {
+  if (typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+    console.error('[Player] loadVideo called with invalid videoId:', videoId);
+    return;
+  }
+  showPlayerChrome();
+
+  currentVideoId = videoId;
+  currentPlaylistId = null;
+  currentPlaylistIndex = -1;
+  pendingPlaylistId = null;
+
+  // Update URL so the link can be shared
+  try {
+    const url = new URL(window.location);
+    url.searchParams.set('v', videoId);
+    url.searchParams.delete('list');
+    history.replaceState(null, '', url);
+  } catch (e) {}
+
+  document.getElementById('trackTitle').textContent = title;
+  document.getElementById('trackArtist').textContent = 'Loading info...';
+  document.getElementById('albumArt').src = thumbnail;
+
+  // Reuse existing iframe if possible — destroying and recreating triggers
+  // postMessage origin-mismatch errors on transition.
+  if (player && typeof player.loadVideoById === 'function') {
+    try {
+      player.loadVideoById(videoId);
+      emit('onLoad', { videoId, title, thumbnail, kind: 'video' });
+      return;
+    } catch (e) {
+      console.warn('[Player] reuse failed, recreating:', e);
+    }
+  }
+
+  resetPlayerDom();
 
   player = new YT.Player('ytPlayer', {
     width: '200',
@@ -93,11 +129,80 @@ export function loadVideo(videoId, title, thumbnail) {
     }
   });
 
-  emit('onLoad', { videoId, title, thumbnail });
+  emit('onLoad', { videoId, title, thumbnail, kind: 'video' });
+}
+
+export function loadPlaylist(playlistId, title, thumbnail) {
+  if (typeof playlistId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(playlistId)) {
+    console.error('[Player] loadPlaylist called with invalid playlistId:', playlistId);
+    return;
+  }
+  showPlayerChrome();
+
+  currentVideoId = null;
+  currentPlaylistId = playlistId;
+  currentPlaylistIndex = -1;
+
+  try {
+    const url = new URL(window.location);
+    url.searchParams.delete('v');
+    url.searchParams.set('list', playlistId);
+    history.replaceState(null, '', url);
+  } catch (e) {}
+
+  document.getElementById('trackTitle').textContent = title;
+  document.getElementById('trackArtist').textContent = 'Loading info...';
+  document.getElementById('albumArt').src = thumbnail;
+
+  // Reuse existing iframe if possible — see loadVideo above.
+  if (player && typeof player.loadPlaylist === 'function') {
+    try {
+      player.loadPlaylist({ list: playlistId, listType: 'playlist' });
+      pendingPlaylistId = null;
+      emit('onLoad', { playlistId, title, thumbnail, kind: 'playlist' });
+      return;
+    } catch (e) {
+      console.warn('[Player] reuse failed, recreating:', e);
+    }
+  }
+
+  pendingPlaylistId = playlistId;
+  resetPlayerDom();
+
+  // Construct a blank player; load the playlist inside onPlayerReady.
+  // YT.Player's constructor validates `videoId` and rejects an undefined
+  // value with "Invalid video id" — even when playerVars.list is set —
+  // so we avoid that path entirely and use the loadPlaylist() API instead.
+  player = new YT.Player('ytPlayer', {
+    width: '200',
+    height: '113',
+    playerVars: {
+      autoplay: 1,
+      controls: 1,
+      modestbranding: 1,
+      origin: window.location.origin,
+    },
+    events: {
+      onReady: onPlayerReady,
+      onStateChange: onPlayerStateChange,
+      onError: onPlayerError,
+    }
+  });
+
+  emit('onLoad', { playlistId, title, thumbnail, kind: 'playlist' });
 }
 
 function onPlayerReady(event) {
-  event.target.playVideo();
+  if (pendingPlaylistId) {
+    try {
+      event.target.loadPlaylist({ list: pendingPlaylistId, listType: 'playlist' });
+    } catch (e) {
+      console.error('[Player] loadPlaylist failed:', e);
+    }
+    pendingPlaylistId = null;
+  } else {
+    event.target.playVideo();
+  }
   startProgressUpdates();
 }
 
@@ -109,9 +214,21 @@ function onPlayerStateChange(event) {
     emit('onPlay');
     document.dispatchEvent(new Event('sealsounds:firstplay'));
   } else if (event.data === YT.PlayerState.ENDED) {
-    // Loop the album from the beginning
-    player.seekTo(0, true);
-    player.playVideo();
+    if (currentPlaylistId) {
+      // In playlist mode: IFrame auto-advances between videos. Only loop when
+      // we just finished the last video in the playlist.
+      try {
+        const list = player.getPlaylist && player.getPlaylist();
+        const idx = player.getPlaylistIndex && player.getPlaylistIndex();
+        if (Array.isArray(list) && list.length > 0 && idx >= list.length - 1) {
+          player.playVideoAt(0);
+        }
+      } catch (e) {}
+    } else {
+      // Single-video album: loop from the start
+      player.seekTo(0, true);
+      player.playVideo();
+    }
   } else {
     btn.innerHTML = '&#9654;';
     emit('onPause');
@@ -175,6 +292,13 @@ function startProgressUpdates() {
       document.getElementById('currentTime').textContent = formatTime(current);
       document.getElementById('totalTime').textContent = formatTime(total);
       emit('onProgress', { current, total });
+    }
+    if (currentPlaylistId && player.getPlaylistIndex) {
+      const idx = player.getPlaylistIndex();
+      if (typeof idx === 'number' && idx !== currentPlaylistIndex) {
+        currentPlaylistIndex = idx;
+        emit('onPlaylistVideoChange', { index: idx });
+      }
     }
   }, 500);
 }

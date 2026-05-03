@@ -206,6 +206,15 @@ body {
   height: 100% !important;
 }
 
+/* When YT is expanded, show tracklist and now-playing bar on top */
+body.yt-expanded .tracklist {
+  z-index: 1001;
+}
+
+body.yt-expanded .content {
+  z-index: 1001;
+}
+
 /* Ambient background canvas */
 #ambientCanvas {
   position: fixed;
@@ -556,6 +565,20 @@ body {
 .search-result .result-channel {
   font-size: 13px;
   color: rgba(255,255,255,0.6);
+}
+
+.search-result .result-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: rgba(120, 200, 255, 0.18);
+  color: rgba(180, 220, 255, 0.95);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 
 .search-hint {

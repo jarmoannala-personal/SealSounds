@@ -24,6 +24,66 @@ export function pruneStaleCache(prefix, ttl) {
   } catch (e) {}
 }
 
+const NAMED_ENTITIES = {
+  quot: '"', amp: '&', lt: '<', gt: '>', apos: "'",
+  nbsp: ' ', copy: '©', reg: '®', trade: '™',
+  hellip: '…', ndash: '–', mdash: '—',
+  lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
+};
+
+export function decodeEntities(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (match, entity) => {
+    if (entity[0] === '#') {
+      const code = entity[1] === 'x' || entity[1] === 'X'
+        ? parseInt(entity.slice(2), 16)
+        : parseInt(entity.slice(1), 10);
+      if (!Number.isFinite(code)) return match;
+      try { return String.fromCodePoint(code); } catch (e) { return match; }
+    }
+    const decoded = NAMED_ENTITIES[entity.toLowerCase()];
+    return decoded !== undefined ? decoded : match;
+  });
+}
+
+// Parse a YouTube URL string and return { kind, id, videoId? } or null.
+// Recognises standard watch URLs, youtu.be short URLs, and /playlist URLs.
+// Bare 11-char video IDs and PL-prefixed playlist IDs are also accepted.
+export function parseYouTubeUrl(input) {
+  if (typeof input !== 'string') return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  const idLike = /^[A-Za-z0-9_-]+$/;
+
+  // Bare video ID (11 chars) or playlist ID (starts with PL/UU/LL/RD/FL/OL etc.)
+  if (idLike.test(trimmed)) {
+    if (/^(PL|UU|LL|RD|FL|OL|TL)[A-Za-z0-9_-]{10,}$/.test(trimmed)) {
+      return { kind: 'playlist', id: trimmed };
+    }
+    if (trimmed.length === 11) return { kind: 'video', id: trimmed };
+    return null;
+  }
+
+  let url;
+  try { url = new URL(trimmed); } catch (e) { return null; }
+  if (!/(^|\.)youtube\.com$|^youtu\.be$/i.test(url.hostname)) return null;
+
+  const list = url.searchParams.get('list');
+  let v = url.searchParams.get('v');
+  if (!v && url.hostname.toLowerCase() === 'youtu.be') {
+    v = url.pathname.replace(/^\//, '').split('/')[0];
+  }
+
+  if (list && idLike.test(list)) {
+    return v && idLike.test(v)
+      ? { kind: 'playlist', id: list, videoId: v }
+      : { kind: 'playlist', id: list };
+  }
+  if (v && idLike.test(v)) return { kind: 'video', id: v };
+  return null;
+}
+
 export function guessArtistFromTitle(title) {
   const patterns = [
     /^(.+?)\s*[-–—]\s*.+?full\s*album/i,
