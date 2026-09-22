@@ -49,6 +49,14 @@ describe('cache busting', () => {
     const expected = displayVersion.replace(/\./g, '');
     expect(cssVersion).toBe(expected);
   });
+
+  it('tauri.conf.json and Cargo.toml versions match the UI version label', () => {
+    const tauriConf = JSON.parse(readFileSync(join(UI_DIR, '../src-tauri/tauri.conf.json'), 'utf-8'));
+    const cargoToml = readFileSync(join(UI_DIR, '../src-tauri/Cargo.toml'), 'utf-8');
+    const cargoVersion = cargoToml.match(/^version = "([\d.]+)"/m)?.[1];
+    expect(tauriConf.version).toBe(displayVersion);
+    expect(cargoVersion).toBe(displayVersion);
+  });
 });
 
 // ---------------------------------------------------------------------------
