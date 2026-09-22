@@ -136,7 +136,7 @@ async function init() {
     }
   }
 
-  console.log('SealSounds v1.3.0 initialized');
+  console.log('SealSounds v1.3.1 initialized');
 }
 
 // Mobile: periodically show mandelbrot between image slideshows
