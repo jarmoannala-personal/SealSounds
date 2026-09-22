@@ -3,3 +3,5 @@ node_modules/
 .DS_Store
 ui/config.js
 config_ja.js
+push_to_idle.sh
+src-tauri/gen/schemas/
